@@ -182,11 +182,13 @@ async function loop() {
 }
 
 // ── Draw ──────────────────────────────────────────────────────────────────────
-function drawPoseToCanvas(canvas, pose) {
+function drawPoseToCanvas(canvas) {
+  if (!state.webcam || !state.webcam.canvas) return;
+  const src = state.webcam.canvas;
+  if (canvas.width !== src.width) canvas.width = src.width;
+  if (canvas.height !== src.height) canvas.height = src.height;
   const ctx = canvas.getContext("2d");
-  canvas.width = WEBCAM_WIDTH;
-  canvas.height = WEBCAM_HEIGHT;
-  ctx.drawImage(state.webcam.canvas, 0, 0, canvas.width, canvas.height);
+  ctx.drawImage(src, 0, 0);
 }
 
 // ── Prediction helpers ────────────────────────────────────────────────────────
@@ -211,8 +213,8 @@ async function predict() {
   const topPrediction = predictions[0] || null;
   const topPhoto = photoForPrediction(topPrediction);
 
-  drawPoseToCanvas(liveCanvas, pose);
-  drawPoseToCanvas(guessCanvas, pose);
+  drawPoseToCanvas(liveCanvas);
+  drawPoseToCanvas(guessCanvas);
   if (topPhoto) setLiveTarget(topPhoto);
 
   handleLiveMode(predictions);
