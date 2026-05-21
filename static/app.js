@@ -108,10 +108,6 @@ function setLiveTarget(photo) {
   img.style.display = "block";
 
   document.getElementById("livePlaceholder").style.display = "none";
-
-  const labelBar = document.getElementById("liveLabelBar");
-  labelBar.style.display = "flex";
-  document.getElementById("liveMemeLabel").textContent = photoStem(photo).replace(/_/g, " ");
   document.getElementById("liveTargetTitle").textContent = photoStem(photo).replace(/_/g, " ");
 }
 
@@ -136,17 +132,6 @@ function showSuccess(mode, visible) {
   document.getElementById(mode + "SuccessBadge").classList.toggle("hidden", !visible);
 }
 
-// ── Hints ─────────────────────────────────────────────────────────────────────
-function renderHints(mode, matched, probability, targetName) {
-  const hintsId = mode === "live" ? "liveHints" : "guessHints";
-  if (mode === "guess") return;
-  const name = (targetName || "—").replace(/_/g, " ");
-  const message = matched
-    ? name + " — tiens la pose !"
-    : "Plus proche : " + name + " (" + (probability * 100).toFixed(0) + "%)";
-
-  document.getElementById(hintsId).innerHTML = '<span class="hint-chip">' + message + "</span>";
-}
 
 // ── Status bar ────────────────────────────────────────────────────────────────
 function setStatus(live, text) {
@@ -243,7 +228,6 @@ function handleLiveMode(predictions) {
   if (topPhoto) setLiveTarget(topPhoto);
 
   const probability = top ? top.probability : 0;
-  renderHints("live", aboveThreshold, probability, top ? top.className : "—");
   showSuccess("live", aboveThreshold);
 }
 
@@ -255,8 +239,6 @@ function handleGuessMode(predictions) {
   const matched =
     aboveThreshold &&
     normalizeName(top.className) === photoStem(state.guess.target);
-
-  renderHints("guess", matched, top ? top.probability : 0, photoStem(state.guess.target));
 
   if (matched) {
     if (!state.guess.holdStart) {
