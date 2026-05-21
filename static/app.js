@@ -5,6 +5,8 @@ const MODEL_URLS = [
 const WEBCAM_WIDTH = 960;
 const WEBCAM_HEIGHT = 720;
 const GUESS_LEVEL_COUNT = 12;
+const MATCH_THRESHOLD = 0.75;   // minimum confidence to count as a match
+const HOLD_MS = 1000;           // how long the pose must be held before level advances
 
 const STATIC_PHOTOS = [
   { filename: "angry.png",         image_path: "photos/angry.png" },
@@ -30,7 +32,7 @@ const state = {
   loopStarted: false,
   modelAvailable: false,
   live: { running: false, target: null },
-  guess: { running: false, levelIndex: 0, target: null, queue: [], results: [] },
+  guess: { running: false, levelIndex: 0, target: null, queue: [], results: [], holdStart: null },
 };
 
 const liveCanvas = document.getElementById("liveCanvas");
@@ -235,26 +237,36 @@ async function predict() {
 // ── Live mode ─────────────────────────────────────────────────────────────────
 function handleLiveMode(predictions) {
   if (!state.live.running) return;
-  const match = predictions[0] || null;
-  const probability = match ? match.probability : 0;
-  const topPhoto = photoForPrediction(match);
+  const top = predictions[0] || null;
+  const aboveThreshold = top && top.probability >= MATCH_THRESHOLD;
+  const topPhoto = aboveThreshold ? photoForPrediction(top) : null;
   if (topPhoto) setLiveTarget(topPhoto);
 
-  renderHints("live", Boolean(match), probability, match ? match.className : "—");
-  showSuccess("live", Boolean(match));
+  const probability = top ? top.probability : 0;
+  renderHints("live", aboveThreshold, probability, top ? top.className : "—");
+  showSuccess("live", aboveThreshold);
 }
 
 // ── Guess mode ────────────────────────────────────────────────────────────────
 function handleGuessMode(predictions) {
   if (!state.guess.running || !state.guess.target) return;
-  const topPrediction = predictions[0] || null;
+  const top = predictions[0] || null;
+  const aboveThreshold = top && top.probability >= MATCH_THRESHOLD;
   const matched =
-    Boolean(topPrediction) &&
-    normalizeName(topPrediction.className) === photoStem(state.guess.target);
-  renderHints("guess", matched, topPrediction ? topPrediction.probability : 0, photoStem(state.guess.target));
+    aboveThreshold &&
+    normalizeName(top.className) === photoStem(state.guess.target);
+
+  renderHints("guess", matched, top ? top.probability : 0, photoStem(state.guess.target));
 
   if (matched) {
-    completeGuessLevel("correct");
+    if (!state.guess.holdStart) {
+      state.guess.holdStart = Date.now();
+    } else if (Date.now() - state.guess.holdStart >= HOLD_MS) {
+      state.guess.holdStart = null;
+      completeGuessLevel("correct");
+    }
+  } else {
+    state.guess.holdStart = null;
   }
 }
 
