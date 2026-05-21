@@ -5,6 +5,21 @@ const WEBCAM_WIDTH = 960;
 const WEBCAM_HEIGHT = 720;
 const GUESS_LEVEL_COUNT = 12;
 
+const STATIC_PHOTOS = [
+  { filename: "angry.png",         image_path: "photos/angry.png" },
+  { filename: "boring.png",        image_path: "photos/boring.png" },
+  { filename: "bıkmış.png",        image_path: "photos/bıkmış.png" },
+  { filename: "kurnaz.png",        image_path: "photos/kurnaz.png" },
+  { filename: "magara_adami.png",  image_path: "photos/magara_adami.png" },
+  { filename: "merhaba.png",       image_path: "photos/merhaba.png" },
+  { filename: "ne_diyosun_be.png", image_path: "photos/ne_diyosun_be.png" },
+  { filename: "ordek.png",         image_path: "photos/ordek.png" },
+  { filename: "perfect.png",       image_path: "photos/perfect.png" },
+  { filename: "rainbow.png",       image_path: "photos/rainbow.png" },
+  { filename: "scream.png",        image_path: "photos/scream.png" },
+  { filename: "sus.png",           image_path: "photos/sus.png" },
+];
+
 const state = {
   photos: [],
   model: null,
@@ -19,21 +34,6 @@ const state = {
 
 const liveCanvas = document.getElementById("liveCanvas");
 const guessCanvas = document.getElementById("guessCanvas");
-
-const STATIC_PHOTOS = [
-  { filename: "angry.png",        image_path: "./photos/angry.png" },
-  { filename: "boring.png",       image_path: "./photos/boring.png" },
-  { filename: "bıkmış.png",       image_path: "./photos/bıkmış.png" },
-  { filename: "kurnaz.png",       image_path: "./photos/kurnaz.png" },
-  { filename: "magara_adami.png", image_path: "./photos/magara_adami.png" },
-  { filename: "merhaba.png",      image_path: "./photos/merhaba.png" },
-  { filename: "ne_diyosun_be.png",image_path: "./photos/ne_diyosun_be.png" },
-  { filename: "ordek.png",        image_path: "./photos/ordek.png" },
-  { filename: "perfect.png",      image_path: "./photos/perfect.png" },
-  { filename: "rainbow.png",      image_path: "./photos/rainbow.png" },
-  { filename: "scream.png",       image_path: "./photos/scream.png" },
-  { filename: "sus.png",          image_path: "./photos/sus.png" },
-];
 
 function normalizeName(value) {
   return value
