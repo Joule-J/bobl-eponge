@@ -1,4 +1,5 @@
 const MODEL_URLS = [
+  "static/my_model/",
   "https://teachablemachine.withgoogle.com/models/tTYdfh6E2/",
 ];
 const WEBCAM_WIDTH = 960;
