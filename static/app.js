@@ -356,8 +356,16 @@ document.getElementById("skipGuessLevel").addEventListener("click", function () 
 });
 
 document.getElementById("resetGuessMode").addEventListener("click", function () {
-  stopGuessMode();
-  startGuessMode().catch(onModelError);
+  if (!state.loopStarted) return;
+  state.guess.running = false;
+  state.guess.holdStart = null;
+  state.guess.levelIndex = 0;
+  state.guess.results = [];
+  buildGuessQueue();
+  renderGuessProgress();
+  setGuessTarget(state.guess.queue[0]);
+  showSuccess("guess", false);
+  state.guess.running = true;
 });
 
 document.getElementById("liveTargetImage").style.display = "none";
