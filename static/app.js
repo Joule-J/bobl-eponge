@@ -1,24 +1,10 @@
 const MODEL_URLS = [
   "https://teachablemachine.withgoogle.com/models/tTYdfh6E2/",
-  "./static/my_model/",
-];
-const PHOTO_LIBRARY = [
-  { filename: "angry.png", image_path: "./photos/angry.png" },
-  { filename: "boring.png", image_path: "./photos/boring.png" },
-  { filename: "bıkmış.png", image_path: "./photos/bıkmış.png" },
-  { filename: "kurnaz.png", image_path: "./photos/kurnaz.png" },
-  { filename: "magara_adami.png", image_path: "./photos/magara_adami.png" },
-  { filename: "merhaba.png", image_path: "./photos/merhaba.png" },
-  { filename: "ne_diyosun_be.png", image_path: "./photos/ne_diyosun_be.png" },
-  { filename: "ordek.png", image_path: "./photos/ordek.png" },
-  { filename: "perfect.png", image_path: "./photos/perfect.png" },
-  { filename: "rainbow.png", image_path: "./photos/rainbow.png" },
-  { filename: "scream.png", image_path: "./photos/scream.png" },
-  { filename: "sus.png", image_path: "./photos/sus.png" }
+  "/static/my_model/",
 ];
 const WEBCAM_WIDTH = 960;
 const WEBCAM_HEIGHT = 720;
-const HOLD_FRAMES = 4;
+const GUESS_LEVEL_COUNT = 12;
 
 const state = {
   photos: [],
@@ -28,12 +14,21 @@ const state = {
   initialized: false,
   loopStarted: false,
   modelAvailable: false,
-  live: { running: false, target: null, holdFrames: 0 },
-  guess: { running: false, levelIndex: 0, target: null, holdFrames: 0 },
+  live: { running: false, target: null },
+  guess: { running: false, levelIndex: 0, target: null, queue: [], results: [] },
 };
 
 const liveCanvas = document.getElementById("liveCanvas");
 const guessCanvas = document.getElementById("guessCanvas");
+
+async function api(path, options = {}) {
+  const response = await fetch(path, options);
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.detail || "Request failed");
+  }
+  return response.json();
+}
 
 function normalizeName(value) {
   return value
@@ -50,10 +45,50 @@ function photoStem(photo) {
 }
 
 async function loadPhotos() {
-  state.photos = PHOTO_LIBRARY;
+  state.photos = await api("/api/photo-library");
   if (state.photos.length && !state.guess.target) {
     setGuessTarget(state.photos[0]);
   }
+  resetGuessProgress();
+}
+
+function shuffledPhotos(photos) {
+  const items = photos.slice();
+  for (let index = items.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    const current = items[index];
+    items[index] = items[randomIndex];
+    items[randomIndex] = current;
+  }
+  return items;
+}
+
+function guessLevelLimit() {
+  return Math.min(GUESS_LEVEL_COUNT, state.photos.length);
+}
+
+function buildGuessQueue() {
+  state.guess.queue = shuffledPhotos(state.photos).slice(0, guessLevelLimit());
+}
+
+function guessProgressMarkup(status) {
+  return '<span class="guess-progress-dot' + (status ? " is-" + status : "") + '"></span>';
+}
+
+function renderGuessProgress() {
+  const container = document.getElementById("guessProgress");
+  if (!container) return;
+  const total = guessLevelLimit();
+  let markup = "";
+  for (let index = 0; index < total; index += 1) {
+    markup += guessProgressMarkup(state.guess.results[index] || "");
+  }
+  container.innerHTML = markup;
+}
+
+function resetGuessProgress() {
+  state.guess.results = [];
+  renderGuessProgress();
 }
 
 // ── Live mode target ──────────────────────────────────────────────────────────
@@ -75,7 +110,6 @@ function setLiveTarget(photo) {
 // ── Guess mode target ─────────────────────────────────────────────────────────
 function setGuessTarget(photo) {
   state.guess.target = photo;
-  state.guess.holdFrames = 0;
 
   const img = document.getElementById("guessTargetImage");
   img.src = photo.image_path;
@@ -87,8 +121,6 @@ function setGuessTarget(photo) {
   labelBar.style.display = "flex";
   document.getElementById("guessMemeLabel").textContent = photoStem(photo).replace(/_/g, " ");
   document.getElementById("guessLevelTitle").textContent = "Niveau " + (state.guess.levelIndex + 1);
-  document.getElementById("guessLevelCounter").textContent =
-    (state.guess.levelIndex + 1) + " / " + state.photos.length;
 }
 
 // ── Badges ────────────────────────────────────────────────────────────────────
@@ -99,6 +131,7 @@ function showSuccess(mode, visible) {
 // ── Hints ─────────────────────────────────────────────────────────────────────
 function renderHints(mode, matched, probability, targetName) {
   const hintsId = mode === "live" ? "liveHints" : "guessHints";
+  if (mode === "guess") return;
   const name = (targetName || "—").replace(/_/g, " ");
   const message = matched
     ? name + " — tiens la pose !"
@@ -170,11 +203,6 @@ function predictionForTarget(predictions, targetPhoto) {
   return predictions.find((item) => normalizeName(item.className) === target) || null;
 }
 
-function isTopPrediction(prediction, predictions) {
-  if (!prediction || !predictions.length) return false;
-  return normalizeName(predictions[0].className) === normalizeName(prediction.className);
-}
-
 function photoForPrediction(prediction) {
   if (!prediction) return null;
   const predictedStem = normalizeName(prediction.className);
@@ -203,49 +231,54 @@ function handleLiveMode(predictions) {
   if (!state.live.running) return;
   const match = predictions[0] || null;
   const probability = match ? match.probability : 0;
-  const matched = Boolean(match);
   const topPhoto = photoForPrediction(match);
   if (topPhoto) setLiveTarget(topPhoto);
 
-  state.live.holdFrames = matched ? state.live.holdFrames + 1 : 0;
-  renderHints("live", matched, probability, match ? match.className : "—");
-
-  if (state.live.holdFrames >= HOLD_FRAMES) {
-    state.live.running = false;
-    state.live.holdFrames = 0;
-    showSuccess("live", true);
-    setTimeout(() => {
-      showSuccess("live", false);
-      state.live.running = true;
-    }, 1500);
-  }
+  renderHints("live", Boolean(match), probability, match ? match.className : "—");
+  showSuccess("live", Boolean(match));
 }
 
 // ── Guess mode ────────────────────────────────────────────────────────────────
 function handleGuessMode(predictions) {
   if (!state.guess.running || !state.guess.target) return;
-  const match = predictionForTarget(predictions, state.guess.target);
-  const probability = match ? match.probability : 0;
-  const matched = isTopPrediction(match, predictions);
-  state.guess.holdFrames = matched ? state.guess.holdFrames + 1 : 0;
-  renderHints("guess", matched, probability, photoStem(state.guess.target));
+  const topPrediction = predictions[0] || null;
+  const matched =
+    Boolean(topPrediction) &&
+    normalizeName(topPrediction.className) === photoStem(state.guess.target);
+  renderHints("guess", matched, topPrediction ? topPrediction.probability : 0, photoStem(state.guess.target));
 
-  if (state.guess.holdFrames >= HOLD_FRAMES) {
-    state.guess.running = false;
-    state.guess.holdFrames = 0;
-    showSuccess("guess", true);
-    setTimeout(function () {
-      showSuccess("guess", false);
-      state.guess.levelIndex += 1;
-      if (state.guess.levelIndex >= state.photos.length) {
-        document.getElementById("guessHints").innerHTML =
-          '<span class="hint-chip">Tous les niveaux complétés !</span>';
-        return;
-      }
-      setGuessTarget(state.photos[state.guess.levelIndex]);
-      state.guess.running = true;
-    }, 900);
+  if (matched) {
+    completeGuessLevel("correct");
   }
+}
+
+function finishGuessMode() {
+  state.guess.running = false;
+  state.guess.target = null;
+  document.getElementById("guessLevelTitle").textContent = "Tous les niveaux complétés !";
+}
+
+function advanceGuessLevel() {
+  state.guess.levelIndex += 1;
+  if (state.guess.levelIndex >= state.guess.queue.length) {
+    finishGuessMode();
+    return;
+  }
+  setGuessTarget(state.guess.queue[state.guess.levelIndex]);
+  state.guess.running = true;
+}
+
+function completeGuessLevel(result) {
+  state.guess.running = false;
+  state.guess.results[state.guess.levelIndex] = result;
+  renderGuessProgress();
+  if (result === "correct") {
+    showSuccess("guess", true);
+  }
+  setTimeout(function () {
+    showSuccess("guess", false);
+    advanceGuessLevel();
+  }, result === "correct" ? 900 : 150);
 }
 
 // ── Start / stop ──────────────────────────────────────────────────────────────
@@ -253,7 +286,6 @@ async function startLiveMode() {
   setStatus(false, "Chargement...");
   await ensureLoop();
   state.live.running = true;
-  state.live.holdFrames = 0;
   showSuccess("live", false);
   const btn = document.getElementById("startLiveMode");
   btn.textContent = "◼ Arrêter";
@@ -271,10 +303,12 @@ async function startGuessMode() {
   setStatus(false, "Chargement...");
   await ensureLoop();
   if (!state.photos.length) throw new Error("Aucune photo trouvée.");
+  buildGuessQueue();
   state.guess.running = true;
   state.guess.levelIndex = 0;
-  state.guess.holdFrames = 0;
-  setGuessTarget(state.photos[0]);
+  state.guess.results = [];
+  renderGuessProgress();
+  setGuessTarget(state.guess.queue[0]);
   showSuccess("guess", false);
   const btn = document.getElementById("startGuessMode");
   btn.textContent = "◼ Arrêter";
@@ -312,6 +346,11 @@ document.getElementById("startLiveMode").addEventListener("click", function () {
 
 document.getElementById("startGuessMode").addEventListener("click", function () {
   startGuessMode().catch(onModelError);
+});
+
+document.getElementById("skipGuessLevel").addEventListener("click", function () {
+  if (!state.guess.running || !state.guess.target) return;
+  completeGuessLevel("skipped");
 });
 
 document.getElementById("liveTargetImage").style.display = "none";
