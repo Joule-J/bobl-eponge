@@ -371,6 +371,19 @@ document.getElementById("skipGuessLevel").addEventListener("click", function () 
   completeGuessLevel("skipped");
 });
 
+document.getElementById("resetGuessMode").addEventListener("click", function () {
+  if (!state.guess.running) return;
+  state.guess.running = false;
+  state.guess.holdStart = null;
+  buildGuessQueue();
+  state.guess.levelIndex = 0;
+  state.guess.results = [];
+  renderGuessProgress();
+  setGuessTarget(state.guess.queue[0]);
+  showSuccess("guess", false);
+  state.guess.running = true;
+});
+
 document.getElementById("liveTargetImage").style.display = "none";
 document.getElementById("guessTargetImage").style.display = "none";
 
