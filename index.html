@@ -127,6 +127,19 @@
       </div><!-- /screens -->
     </div><!-- /app-body -->
 
+    <!-- Results popup -->
+    <div id="resultsPopup" class="results-popup hidden">
+      <div class="results-card">
+        <div class="results-title">Résultats</div>
+        <div class="results-score-wrap">
+          <span class="results-score" id="resultsScore">0</span>
+          <span class="results-total" id="resultsTotal">/11</span>
+        </div>
+        <div class="results-dots" id="resultsDots"></div>
+        <button class="btn btn-primary results-restart" id="resultsRestart">↺ Recommencer</button>
+      </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/pose@0.8/dist/teachablemachine-pose.min.js"></script>
     <script src="static/app.js"></script>

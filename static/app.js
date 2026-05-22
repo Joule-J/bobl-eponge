@@ -169,12 +169,28 @@ function handleGuessMode(predictions) {
   if (state.guess.holdFrames >= HOLD_FRAMES) completeGuessLevel("correct");
 }
 
+function showResultsPopup() {
+  const correct = state.guess.results.filter(r => r === "correct").length;
+  const total = state.guess.queue.length;
+  document.getElementById("resultsScore").textContent = correct;
+  document.getElementById("resultsTotal").textContent = "/" + total;
+  const dots = document.getElementById("resultsDots");
+  dots.innerHTML = state.guess.results.map(r =>
+    '<span class="guess-progress-dot is-' + r + '"></span>'
+  ).join("");
+  document.getElementById("resultsPopup").classList.remove("hidden");
+}
+
+function hideResultsPopup() {
+  document.getElementById("resultsPopup").classList.add("hidden");
+}
+
 function advanceGuessLevel() {
   state.guess.levelIndex += 1;
   if (state.guess.levelIndex >= state.guess.queue.length) {
     state.guess.running = false;
     state.guess.target = null;
-    document.getElementById("guessLevelTitle").textContent = "Tous les niveaux complétés !";
+    showResultsPopup();
     return;
   }
   setGuessTarget(state.guess.queue[state.guess.levelIndex]);
@@ -260,3 +276,8 @@ document.getElementById("skipGuessLevel").addEventListener("click", () => {
 document.getElementById("liveTargetImage").style.display = "none";
 document.getElementById("guessTargetImage").style.display = "none";
 renderGuessProgress();
+
+document.getElementById("resultsRestart").addEventListener("click", function () {
+  hideResultsPopup();
+  startGuessMode().catch(onModelError);
+});

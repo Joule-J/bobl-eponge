@@ -476,3 +476,70 @@ body {
     padding: 16px;
   }
 }
+
+/* Results popup */
+.results-popup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.results-popup.hidden {
+  display: none;
+}
+
+.results-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 40px 48px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  min-width: 280px;
+}
+
+.results-title {
+  font-family: "Bangers", sans-serif;
+  font-size: 2rem;
+  letter-spacing: 0.08em;
+  color: #1a1a1a;
+}
+
+.results-score-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.results-score {
+  font-size: 4rem;
+  font-weight: 900;
+  color: #f5a623;
+  line-height: 1;
+}
+
+.results-total {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #999;
+}
+
+.results-dots {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 220px;
+}
+
+.results-restart {
+  margin-top: 8px;
+  font-size: 1rem;
+  padding: 12px 32px;
+}
