@@ -208,7 +208,9 @@ body {
 }
 
 #liveGeneratorScreen.active,
-#guessModeScreen.active {
+#guessModeScreen.active,
+#statueLiveScreen.active,
+#statueGuessScreen.active {
   grid-template-columns: 1fr 1fr;
 }
 
