@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pose Tabu — Devineur</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Bangers&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="static/styles.css" />
+  <link rel="stylesheet" href="static/tabu.css" />
+</head>
+<body>
+  <div class="app-body">
+
+    <div class="topbar">
+      <div class="topbar-modes">
+        <span class="tabu-role-badge tahminci">🎯 Devineur</span>
+      </div>
+      <div class="topbar-brand">
+        <span class="topbar-title">Pose Tabu</span>
+      </div>
+      <div class="topbar-controls">
+        <span class="tabu-room-code" id="roomCodeDisplay">—</span>
+      </div>
+    </div>
+
+    <div class="screens">
+
+      <!-- WAITING for host to start -->
+      <section id="waitingScreen" class="tabu-full-screen">
+        <div class="tabu-wait-card">
+          <div class="tabu-wait-icon">⏳</div>
+          <div class="tabu-wait-title">En attente de l'Annonciateur…</div>
+          <div class="tabu-wait-desc">Code de la salle :</div>
+          <div class="tabu-code-big" id="waitCode">—</div>
+        </div>
+      </section>
+
+      <!-- PLAYING -->
+      <section id="playScreen" class="screen" style="display:none">
+
+        <!-- Camera stage -->
+        <div class="stage">
+          <div class="stage-header">
+            <div class="stage-meta">
+              <span class="stage-eyebrow">Caméra</span>
+              <span class="stage-title">Fais la pose !</span>
+            </div>
+            <div id="tahminciSuccessBadge" class="badge badge-success hidden">✓ Réussi !</div>
+          </div>
+          <div class="video-wrap">
+            <canvas id="tahminciCanvas" class="pose-canvas"></canvas>
+          </div>
+          <div class="hints-bar" id="tahminciHints"></div>
+        </div>
+
+        <!-- Score / status panel -->
+        <div class="stage">
+          <div class="stage-header">
+            <div class="stage-meta">
+              <span class="stage-eyebrow">Tableau de bord</span>
+              <span class="stage-title">Progression</span>
+            </div>
+          </div>
+          <div class="tabu-score-panel">
+            <div class="tabu-score-block">
+              <span class="tabu-score-num" id="tahminciScore">0</span>
+              <span class="tabu-score-label">Score</span>
+            </div>
+            <div class="tabu-score-block">
+              <span class="tabu-score-num" id="tahminciLevelNum">1</span>
+              <span class="tabu-score-label">Niveau</span>
+            </div>
+            <div class="tabu-score-block">
+              <span class="tabu-score-num" id="tahminciTotal">—</span>
+              <span class="tabu-score-label">Total</span>
+            </div>
+          </div>
+          <div class="guess-progress" id="tahminciProgress" style="padding:16px 18px;gap:10px;flex-wrap:wrap;"></div>
+        </div>
+
+      </section>
+
+      <!-- FINISHED -->
+      <section id="finishedScreen" class="tabu-full-screen" style="display:none">
+        <div class="tabu-wait-card">
+          <div class="tabu-wait-icon">🎉</div>
+          <div class="tabu-wait-title">Partie terminée !</div>
+          <div class="tabu-final-score">
+            <span id="tahminciFinal">0</span><span class="tabu-final-total" id="tahminciTotal2">/10</span>
+          </div>
+          <div class="results-dots" id="tahminciDots"></div>
+          <a class="btn btn-primary results-restart" href="tabu.html">↺ Nouvelle partie</a>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/pose@0.8/dist/teachablemachine-pose.min.js"></script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+    import { getDatabase, ref, onValue, update, get } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCx6NrESFkyL87PrdrVPxOp0OcsBlxF9ys",
+      authDomain: "pose-tabu.firebaseapp.com",
+      databaseURL: "https://pose-tabu-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "pose-tabu",
+      storageBucket: "pose-tabu.firebasestorage.app",
+      messagingSenderId: "785802091003",
+      appId: "1:785802091003:web:8787bfb0f85583f4cf935e",
+    };
+
+    const app    = initializeApp(firebaseConfig);
+    const db     = getDatabase(app);
+    const params = new URLSearchParams(window.location.search);
+    const ROOM   = params.get("room");
+
+    if (!ROOM) { window.location.href = "tabu.html"; }
+
+    const roomRef = ref(db, "rooms/" + ROOM);
+
+    document.getElementById("roomCodeDisplay").textContent = ROOM;
+    document.getElementById("waitCode").textContent        = ROOM;
+
+    // ── Model / Webcam ────────────────────────────────────────────────────────
+    const MODEL_URLS = {
+      spongebob: "https://teachablemachine.withgoogle.com/models/nlN9VfXC7/",
+      statues:   null, // fill in when ready: "static/statues_model/"
+    };
+
+    const MATCH_THRESHOLD = 0.75;
+    const HOLD_FRAMES     = 4;
+
+    let models  = {};
+    let webcam  = null;
+    let loopOn  = false;
+    let holdFrames = 0;
+
+    let currentTarget = null;  // { label, cat }
+    let currentLevel  = -1;
+    let isTransitioning = false;
+
+    async function loadModel(cat) {
+      if (models[cat]) return;
+      const url = MODEL_URLS[cat];
+      if (!url) return;
+      models[cat] = await tmPose.load(url + "model.json", url + "metadata.json");
+    }
+
+    async function startWebcam() {
+      if (webcam) return;
+      webcam = new tmPose.Webcam(960, 720, true);
+      await webcam.setup();
+      await webcam.play();
+    }
+
+    async function startLoop() {
+      if (loopOn) return;
+      loopOn = true;
+      loop();
+    }
+
+    async function loop() {
+      if (!loopOn) return;
+      webcam.update();
+      await predict();
+      requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+      if (!currentTarget) return;
+      const model = models[currentTarget.cat];
+      if (!model) return;
+
+      const { posenetOutput } = await model.estimatePose(webcam.canvas);
+      const predictions = await model.predict(posenetOutput);
+      predictions.sort((a, b) => b.probability - a.probability);
+
+      const top      = predictions[0];
+      const topLabel = top ? top.className : null;
+      const topProb  = top ? top.probability : 0;
+      const matched  = topProb >= MATCH_THRESHOLD;
+
+      // Draw to canvas
+      const canvas = document.getElementById("tahminciCanvas");
+      canvas.width  = 960;
+      canvas.height = 720;
+      canvas.getContext("2d").drawImage(webcam.canvas, 0, 0);
+
+      // Hints
+      const hintsEl = document.getElementById("tahminciHints");
+      const name = (topLabel || "—").replace(/_/g, " ");
+      hintsEl.innerHTML = matched
+        ? '<span class="hint-chip">' + name + " — tiens la pose !</span>"
+        : '<span class="hint-chip">Plus proche : ' + name + " (" + (topProb * 100).toFixed(0) + "%)</span>";
+
+      // Tell host guesser is trying
+      if (!isTransitioning) {
+        await update(roomRef, { guesser_status: matched ? "matched" : "trying" });
+      }
+
+      // Check if matched target
+      const targetMatch = predictions.find(p => p.className === currentTarget.label);
+      const targetProb  = targetMatch ? targetMatch.probability : 0;
+      const targetHit   = targetProb >= MATCH_THRESHOLD;
+
+      holdFrames = targetHit ? holdFrames + 1 : 0;
+
+      document.getElementById("tahminciSuccessBadge").classList.toggle("hidden", holdFrames < HOLD_FRAMES);
+
+      if (holdFrames >= HOLD_FRAMES && !isTransitioning) {
+        isTransitioning = true;
+        holdFrames = 0;
+        await completeLevel("correct");
+      }
+    }
+
+    async function completeLevel(result) {
+      const snap    = await get(roomRef);
+      if (!snap.exists()) return;
+      const room    = snap.val();
+      const level   = room.current_level || 0;
+      const queue   = room.queue || [];
+      const results = room.results || [];
+      results[level] = result;
+      const newScore = (room.score || 0) + (result === "correct" ? 1 : 0);
+
+      setTimeout(async () => {
+        document.getElementById("tahminciSuccessBadge").classList.add("hidden");
+        if (level + 1 >= queue.length) {
+          await update(roomRef, { status: "finished", results, score: newScore, guesser_status: "" });
+        } else {
+          await update(roomRef, {
+            current_level:  level + 1,
+            results,
+            score:          newScore,
+            guesser_status: "",
+          });
+        }
+        isTransitioning = false;
+      }, result === "correct" ? 900 : 150);
+    }
+
+    // ── Firebase listener ─────────────────────────────────────────────────────
+    onValue(roomRef, async snap => {
+      if (!snap.exists()) return;
+      const room = snap.val();
+
+      if (room.status === "waiting") {
+        // Tell host we joined → start game
+        await update(roomRef, { status: "playing" });
+        return;
+      }
+
+      if (room.status === "finished") {
+        loopOn = false;
+        document.getElementById("waitingScreen").style.display  = "none";
+        document.getElementById("playScreen").style.display     = "none";
+        document.getElementById("finishedScreen").style.display = "flex";
+        document.getElementById("tahminciFinal").textContent  = room.score || 0;
+        document.getElementById("tahminciTotal2").textContent = "/" + (room.queue || []).length;
+        document.getElementById("tahminciDots").innerHTML = (room.results || []).map(r =>
+          '<span class="guess-progress-dot is-' + r + '"></span>'
+        ).join("");
+        return;
+      }
+
+      // Playing
+      document.getElementById("waitingScreen").style.display  = "none";
+      document.getElementById("playScreen").style.display     = "grid";
+      document.getElementById("finishedScreen").style.display = "none";
+
+      const queue   = room.queue || [];
+      const level   = room.current_level || 0;
+      const results = room.results || [];
+
+      document.getElementById("tahminciScore").textContent    = room.score || 0;
+      document.getElementById("tahminciLevelNum").textContent = level + 1;
+      document.getElementById("tahminciTotal").textContent    = queue.length;
+
+      const prog = document.getElementById("tahminciProgress");
+      prog.innerHTML =
+        results.slice(0, queue.length).map(r => '<span class="guess-progress-dot' + (r ? " is-" + r : "") + '"></span>').join("") +
+        Array(Math.max(0, queue.length - results.length)).fill('<span class="guess-progress-dot"></span>').join("");
+
+      if (level !== currentLevel && level < queue.length) {
+        currentLevel  = level;
+        currentTarget = queue[level];
+        holdFrames    = 0;
+        isTransitioning = false;
+
+        // Load model for this category
+        await loadModel(currentTarget.cat);
+        await startWebcam();
+        await startLoop();
+      }
+    });
+  </script>
+</body>
+</html>

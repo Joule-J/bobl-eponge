@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pose Tabu — Annonciateur</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Bangers&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="static/styles.css" />
+  <link rel="stylesheet" href="static/tabu.css" />
+</head>
+<body>
+  <div class="app-body">
+
+    <div class="topbar">
+      <div class="topbar-modes">
+        <span class="tabu-role-badge anlatici">👁 Annonciateur</span>
+      </div>
+      <div class="topbar-brand">
+        <span class="topbar-title">Pose Tabu</span>
+      </div>
+      <div class="topbar-controls">
+        <span class="tabu-room-code" id="roomCodeDisplay">—</span>
+      </div>
+    </div>
+
+    <div class="screens">
+
+      <!-- WAITING for guesser -->
+      <section id="waitingScreen" class="tabu-full-screen">
+        <div class="tabu-wait-card">
+          <div class="tabu-wait-icon">⏳</div>
+          <div class="tabu-wait-title">En attente du Devineur…</div>
+          <div class="tabu-wait-desc">Partage ce code avec ton partenaire :</div>
+          <div class="tabu-code-big" id="waitCode">—</div>
+          <div class="tabu-wait-desc" style="font-size:0.8rem;opacity:0.6">URL : <span id="waitUrl"></span></div>
+        </div>
+      </section>
+
+      <!-- PLAYING -->
+      <section id="playScreen" class="screen" style="display:none">
+
+        <!-- Target image -->
+        <div class="stage">
+          <div class="stage-header">
+            <div class="stage-meta">
+              <span class="stage-eyebrow">Pose cible</span>
+              <span class="stage-title" id="anlaticiLevelTitle">Niveau 1</span>
+            </div>
+            <div class="level-indicator">
+              <div class="guess-progress" id="anlaticiProgress"></div>
+              <button class="btn btn-secondary" id="skipAnlatici">Passer</button>
+            </div>
+          </div>
+          <div class="meme-wrap">
+            <img id="anlaticiTargetImage" alt="" />
+            <div class="meme-label-bar" id="anlaticiLabelBar" style="display:none">
+              <span class="meme-name" id="anlaticiMemeLabel">—</span>
+              <span class="meme-tag" id="anlaticiCatTag">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Score / status panel -->
+        <div class="stage">
+          <div class="stage-header">
+            <div class="stage-meta">
+              <span class="stage-eyebrow">Tableau de bord</span>
+              <span class="stage-title">Progression</span>
+            </div>
+          </div>
+          <div class="tabu-score-panel">
+            <div class="tabu-score-block">
+              <span class="tabu-score-num" id="anlaticiScore">0</span>
+              <span class="tabu-score-label">Score</span>
+            </div>
+            <div class="tabu-score-block">
+              <span class="tabu-score-num" id="anlaticiLevelNum">1</span>
+              <span class="tabu-score-label">Niveau</span>
+            </div>
+            <div class="tabu-score-block">
+              <span class="tabu-score-num" id="anlaticiTotal">—</span>
+              <span class="tabu-score-label">Total</span>
+            </div>
+          </div>
+          <div class="tabu-status-bar" id="anlaticiStatus">
+            En attente de la pose…
+          </div>
+        </div>
+
+      </section>
+
+      <!-- FINISHED -->
+      <section id="finishedScreen" class="tabu-full-screen" style="display:none">
+        <div class="tabu-wait-card">
+          <div class="tabu-wait-icon">🎉</div>
+          <div class="tabu-wait-title">Partie terminée !</div>
+          <div class="tabu-final-score">
+            <span id="finalScore">0</span><span class="tabu-final-total" id="finalTotal">/10</span>
+          </div>
+          <div class="results-dots" id="anlaticiDots"></div>
+          <a class="btn btn-primary results-restart" href="tabu.html">↺ Nouvelle partie</a>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+    import { getDatabase, ref, onValue, update, get } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCx6NrESFkyL87PrdrVPxOp0OcsBlxF9ys",
+      authDomain: "pose-tabu.firebaseapp.com",
+      databaseURL: "https://pose-tabu-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "pose-tabu",
+      storageBucket: "pose-tabu.firebasestorage.app",
+      messagingSenderId: "785802091003",
+      appId: "1:785802091003:web:8787bfb0f85583f4cf935e",
+    };
+
+    const app    = initializeApp(firebaseConfig);
+    const db     = getDatabase(app);
+    const params = new URLSearchParams(window.location.search);
+    const ROOM   = params.get("room");
+
+    if (!ROOM) { window.location.href = "tabu.html"; }
+
+    const roomRef = ref(db, "rooms/" + ROOM);
+
+    function photoPath(cat, label) {
+      return cat === "spongebob" ? "photos/" + label + ".png" : "statues_photos/" + label + ".png";
+    }
+
+    // Show room code
+    document.getElementById("roomCodeDisplay").textContent = ROOM;
+    document.getElementById("waitCode").textContent = ROOM;
+    document.getElementById("waitUrl").textContent =
+      window.location.origin + window.location.pathname.replace("tabu-anlatici.html", "tabu-tahminci.html") + "?room=" + ROOM;
+
+    let lastLevel = -1;
+
+    onValue(roomRef, snap => {
+      if (!snap.exists()) return;
+      const room = snap.val();
+
+      if (room.status === "waiting") {
+        document.getElementById("waitingScreen").style.display = "flex";
+        document.getElementById("playScreen").style.display    = "none";
+        document.getElementById("finishedScreen").style.display = "none";
+        return;
+      }
+
+      if (room.status === "finished") {
+        document.getElementById("waitingScreen").style.display  = "none";
+        document.getElementById("playScreen").style.display     = "none";
+        document.getElementById("finishedScreen").style.display = "flex";
+        document.getElementById("finalScore").textContent = room.score || 0;
+        document.getElementById("finalTotal").textContent = "/" + room.queue.length;
+        const dots = document.getElementById("anlaticiDots");
+        dots.innerHTML = (room.results || []).map(r =>
+          '<span class="guess-progress-dot is-' + r + '"></span>'
+        ).join("");
+        return;
+      }
+
+      // Playing
+      document.getElementById("waitingScreen").style.display  = "none";
+      document.getElementById("playScreen").style.display     = "grid";
+      document.getElementById("finishedScreen").style.display = "none";
+
+      const queue   = room.queue || [];
+      const level   = room.current_level || 0;
+      const results = room.results || [];
+      const total   = queue.length;
+
+      document.getElementById("anlaticiScore").textContent    = room.score || 0;
+      document.getElementById("anlaticiLevelNum").textContent = level + 1;
+      document.getElementById("anlaticiTotal").textContent    = total;
+
+      // Progress dots
+      const prog = document.getElementById("anlaticiProgress");
+      prog.innerHTML =
+        results.slice(0, total).map(r => '<span class="guess-progress-dot' + (r ? " is-" + r : "") + '"></span>').join("") +
+        Array(Math.max(0, total - results.length)).fill('<span class="guess-progress-dot"></span>').join("");
+
+      if (level !== lastLevel && level < total) {
+        lastLevel = level;
+        const item = queue[level];
+        document.getElementById("anlaticiTargetImage").src           = photoPath(item.cat, item.label);
+        document.getElementById("anlaticiLabelBar").style.display    = "flex";
+        document.getElementById("anlaticiMemeLabel").textContent     = item.label.replace(/_/g, " ");
+        document.getElementById("anlaticiCatTag").textContent        = item.cat === "spongebob" ? "Bob L'éponge" : "Statues";
+        document.getElementById("anlaticiLevelTitle").textContent    = "Niveau " + (level + 1);
+      }
+
+      // Status from guesser
+      const status = room.guesser_status || "";
+      const statusEl = document.getElementById("anlaticiStatus");
+      if (status === "matched") {
+        statusEl.textContent = "✓ Pose réussie !";
+        statusEl.className   = "tabu-status-bar status-ok";
+      } else if (status === "trying") {
+        statusEl.textContent = "⏱ En train d'essayer…";
+        statusEl.className   = "tabu-status-bar status-trying";
+      } else {
+        statusEl.textContent = "En attente de la pose…";
+        statusEl.className   = "tabu-status-bar";
+      }
+    });
+
+    // Skip button
+    document.getElementById("skipAnlatici").addEventListener("click", async () => {
+      const snap  = await get(roomRef);
+      if (!snap.exists()) return;
+      const room  = snap.val();
+      const level = room.current_level || 0;
+      const queue = room.queue || [];
+      const results = room.results || [];
+      results[level] = "skipped";
+
+      if (level + 1 >= queue.length) {
+        await update(roomRef, { status: "finished", results });
+      } else {
+        await update(roomRef, {
+          current_level:  level + 1,
+          guesser_status: "",
+          results,
+        });
+      }
+    });
+  </script>
+</body>
+</html>

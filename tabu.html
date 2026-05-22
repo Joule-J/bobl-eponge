@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pose Tabu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Bangers&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="static/styles.css" />
+  <link rel="stylesheet" href="static/tabu.css" />
+</head>
+<body>
+  <div class="tabu-lobby">
+
+    <div class="lobby-brand">
+      <span class="lobby-title">Pose Tabu</span>
+      <a class="lobby-back" href="index.html">← Retour</a>
+    </div>
+
+    <!-- CREATE ROOM -->
+    <div class="lobby-card" id="createCard">
+      <div class="lobby-card-title">Créer une salle</div>
+      <div class="lobby-card-desc">Tu seras l'<strong>Annonciateur</strong> — tu vois la pose, l'autre doit la deviner.</div>
+
+      <div class="lobby-field">
+        <label class="lobby-label">Catégorie</label>
+        <select class="lobby-select" id="createCategory">
+          <option value="spongebob">Bob L'éponge</option>
+          <option value="statues">Statues</option>
+          <option value="mix">Mix</option>
+        </select>
+      </div>
+
+      <div class="lobby-field">
+        <label class="lobby-label">Nombre de niveaux</label>
+        <select class="lobby-select" id="createLevels">
+          <option value="5">5</option>
+          <option value="10" selected>10</option>
+          <option value="15">15</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary btn-lobby" id="createBtn">Créer la salle</button>
+    </div>
+
+    <div class="lobby-or">ou</div>
+
+    <!-- JOIN ROOM -->
+    <div class="lobby-card" id="joinCard">
+      <div class="lobby-card-title">Rejoindre une salle</div>
+      <div class="lobby-card-desc">Tu seras le <strong>Devineur</strong> — fais la pose avec ta caméra.</div>
+
+      <div class="lobby-field">
+        <label class="lobby-label">Code de la salle</label>
+        <input class="lobby-input" id="joinCode" type="text" maxlength="6" placeholder="Ex: XK7F2M" autocomplete="off" />
+      </div>
+
+      <button class="btn btn-primary btn-lobby" id="joinBtn">Rejoindre</button>
+      <div class="lobby-error hidden" id="joinError">Salle introuvable.</div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+    import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCx6NrESFkyL87PrdrVPxOp0OcsBlxF9ys",
+      authDomain: "pose-tabu.firebaseapp.com",
+      databaseURL: "https://pose-tabu-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "pose-tabu",
+      storageBucket: "pose-tabu.firebasestorage.app",
+      messagingSenderId: "785802091003",
+      appId: "1:785802091003:web:8787bfb0f85583f4cf935e",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    function randomCode() {
+      return Math.random().toString(36).substring(2, 8).toUpperCase();
+    }
+
+    const LABELS = {
+      spongebob: ["angry","bıkmış","boring","magara_adami","merhaba","ne_diyosun_be","ordek","perfect","rainbow","scream","sus"],
+      statues:   [],
+    };
+
+    function getQueue(category, count) {
+      let pool = [];
+      if (category === "spongebob") pool = LABELS.spongebob.map(l => ({ label: l, cat: "spongebob" }));
+      else if (category === "statues") pool = LABELS.statues.map(l => ({ label: l, cat: "statues" }));
+      else pool = [
+        ...LABELS.spongebob.map(l => ({ label: l, cat: "spongebob" })),
+        ...LABELS.statues.map(l => ({ label: l, cat: "statues" })),
+      ];
+      const shuffled = pool.sort(() => Math.random() - 0.5);
+      return shuffled.slice(0, Math.min(count, shuffled.length));
+    }
+
+    document.getElementById("createBtn").addEventListener("click", async () => {
+      const btn      = document.getElementById("createBtn");
+      const category = document.getElementById("createCategory").value;
+      const levels   = parseInt(document.getElementById("createLevels").value);
+      const code     = randomCode();
+      const queue    = getQueue(category, levels);
+
+      if (queue.length === 0) {
+        alert("Cette catégorie n'a pas encore de poses. Choisissez Bob L'éponge ou Mix.");
+        return;
+      }
+
+      btn.textContent = "Création…";
+      btn.disabled = true;
+
+      await set(ref(db, "rooms/" + code), {
+        category,
+        status:        "waiting",
+        current_level: 0,
+        score:         0,
+        queue:         queue,
+        results:       [],
+        created_at:    Date.now(),
+      });
+
+      window.location.href = "tabu-anlatici.html?room=" + code;
+    });
+
+    document.getElementById("joinBtn").addEventListener("click", async () => {
+      const code = document.getElementById("joinCode").value.trim().toUpperCase();
+      const errEl = document.getElementById("joinError");
+      errEl.classList.add("hidden");
+
+      if (code.length < 4) {
+        errEl.textContent = "Entrez un code valide.";
+        errEl.classList.remove("hidden");
+        return;
+      }
+
+      const snap = await get(child(ref(db), "rooms/" + code));
+      if (!snap.exists()) {
+        errEl.textContent = "Salle introuvable.";
+        errEl.classList.remove("hidden");
+        return;
+      }
+
+      const room = snap.val();
+      if (room.status === "finished") {
+        errEl.textContent = "Cette salle est terminée.";
+        errEl.classList.remove("hidden");
+        return;
+      }
+
+      window.location.href = "tabu-tahminci.html?room=" + code;
+    });
+
+    document.getElementById("joinCode").addEventListener("input", e => {
+      e.target.value = e.target.value.toUpperCase();
+    });
+  </script>
+</body>
+</html>

@@ -161,6 +161,15 @@ body {
   background: rgba(255, 255, 255, 0.28);
 }
 
+.tabu-link-btn {
+  text-decoration: none;
+  background: rgba(229, 54, 54, 0.28) !important;
+}
+
+.tabu-link-btn:hover {
+  background: rgba(229, 54, 54, 0.45) !important;
+}
+
 .dropdown-arrow {
   font-size: 0.7rem;
   opacity: 0.8;
