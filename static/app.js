@@ -5,7 +5,7 @@ const HOLD_MS = 1000;
 
 // Only show photos that exist in the model
 const MODEL_LABELS = [
-  "angry", "bıkmış", "rainbow", "boring", "kurnaz",
+  "angry", "bıkmış", "rainbow", "boring",
   "magara_adami", "merhaba", "ne_diyosun_be", "ordek",
   "perfect", "scream", "sus"
 ];
@@ -14,7 +14,6 @@ const ALL_PHOTOS = [
   { filename: "angry.png",         image_path: "photos/angry.png" },
   { filename: "boring.png",        image_path: "photos/boring.png" },
   { filename: "bıkmış.png",        image_path: "photos/bıkmış.png" },
-  { filename: "kurnaz.png",        image_path: "photos/kurnaz.png" },
   { filename: "magara_adami.png",  image_path: "photos/magara_adami.png" },
   { filename: "merhaba.png",       image_path: "photos/merhaba.png" },
   { filename: "ne_diyosun_be.png", image_path: "photos/ne_diyosun_be.png" },
