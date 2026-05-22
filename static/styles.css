@@ -22,7 +22,7 @@ body {
   overflow: hidden;
   background:
     linear-gradient(rgba(249, 237, 91, 0.18), rgba(249, 237, 91, 0.18)),
-    url("squarepants.jpg") center center / cover no-repeat fixed;
+    url("/static/squarepants.jpg") center center / cover no-repeat fixed;
   color: var(--ink);
 }
 
@@ -87,20 +87,19 @@ body {
   text-shadow: 3px 3px 0 rgba(32, 20, 7, 0.18);
 }
 
+.topbar-version {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-left: 0.4em;
+  vertical-align: super;
+}
+
 .topbar-user {
   justify-self: end;
   font-size: 1rem;
   font-weight: 900;
   letter-spacing: 0.06em;
   color: white;
-}
-
-.topbar-version {
-  justify-self: end;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: rgba(255,255,255,0.6);
 }
 
 .screens {
