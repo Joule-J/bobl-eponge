@@ -1,5 +1,5 @@
 const MODEL_URL = "static/my_model/";
-const GUESS_LEVEL_COUNT = 12;
+const GUESS_LEVEL_COUNT = 11;
 const MATCH_THRESHOLD = 0.75;
 const HOLD_MS = 1000;
 
@@ -166,7 +166,7 @@ async function loop() {
 
 // ── Draw (TM official pattern with skeleton) ──────────────────────────────────
 function drawPose(ctx, pose) {
-  if (!state.webcam.canvas) return;
+  if (!ctx || !state.webcam.canvas) return;
   ctx.drawImage(state.webcam.canvas, 0, 0);
   if (pose) {
     const minConf = 0.5;
@@ -180,8 +180,8 @@ async function predict() {
   const { pose, posenetOutput } = await state.model.estimatePose(state.webcam.canvas);
   const predictions = await state.model.predict(posenetOutput);
 
-  drawPose(state.ctx.live, pose);
-  drawPose(state.ctx.guess, pose);
+  if (state.live.running)  drawPose(state.ctx.live, pose);
+  if (state.guess.running) drawPose(state.ctx.guess, pose);
 
   predictions.sort(function (a, b) { return b.probability - a.probability; });
   const top = predictions[0] || null;
