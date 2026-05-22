@@ -1,32 +1,128 @@
-const MODEL_URL = "https://teachablemachine.withgoogle.com/models/nlN9VfXC7/";
-const WEBCAM_WIDTH = 960;
-const WEBCAM_HEIGHT = 720;
-const MATCH_THRESHOLD = 0.75;
-const HOLD_FRAMES = 4;
-const GUESS_LEVEL_COUNT = 12;
-
-const LABELS = [
-  "angry","bıkmış","boring","magara_adami",
-  "merhaba","ne_diyosun_be","ordek","perfect",
-  "rainbow","scream","sus"
-];
-
-const state = {
-  model: null,
-  webcam: null,
-  initialized: false,
-  loopStarted: false,
-  live: { running: false, holdFrames: 0 },
-  guess: { running: false, levelIndex: 0, target: null, queue: [], results: [], holdFrames: 0 },
+// ── i18n ─────────────────────────────────────────────────────────────────────
+const TRANSLATIONS = {
+  fr: {
+    cat_spongebob:    "Bob L'éponge",
+    cat_statues:      "Statues",
+    tab_live:         "Image Live",
+    tab_levels:       "Mode Niveaux",
+    camera:           "Caméra",
+    take_pose:        "Prends la pose",
+    btn_play:         "▶ Jouer",
+    btn_stop:         "◼ Arrêter",
+    btn_skip:         "Pas",
+    btn_restart:      "↺ Recommencer",
+    matched:          "✓ Matched",
+    prediction:       "Prédiction",
+    waiting:          "En attente d'image…",
+    live_placeholder: "Pose toi — l'image apparaît",
+    tag_image:        "Image",
+    objective:        "Objectif",
+    level_n:          "Niveau 1",
+    guess_placeholder:"Jouer — l'objectif apparaît",
+    tag_target:       "Objectif",
+    hold_pose:        "Tiens la pose, passe le niveau",
+    next:             "✓ Suivant",
+    results_title:    "Résultats",
+    hint_hold:        " — tiens la pose !",
+    hint_closer:      "Plus proche : ",
+    no_model:         "Impossible de charger le modèle Teachable Machine.",
+    statues_no_model: "Le modèle Statues n'est pas encore chargé. Ajoutez static/statues_model/ pour l'activer.",
+  },
+  en: {
+    cat_spongebob:    "Bob L'éponge",
+    cat_statues:      "Statues",
+    tab_live:         "Live Image",
+    tab_levels:       "Level Mode",
+    camera:           "Camera",
+    take_pose:        "Strike a pose",
+    btn_play:         "▶ Play",
+    btn_stop:         "◼ Stop",
+    btn_skip:         "Skip",
+    btn_restart:      "↺ Restart",
+    matched:          "✓ Matched",
+    prediction:       "Prediction",
+    waiting:          "Waiting for image…",
+    live_placeholder: "Pose — image appears",
+    tag_image:        "Image",
+    objective:        "Objective",
+    level_n:          "Level 1",
+    guess_placeholder:"Play — objective appears",
+    tag_target:       "Target",
+    hold_pose:        "Hold the pose, pass the level",
+    next:             "✓ Next",
+    results_title:    "Results",
+    hint_hold:        " — hold the pose!",
+    hint_closer:      "Closest: ",
+    no_model:         "Could not load the Teachable Machine model.",
+    statues_no_model: "Statues model not loaded yet. Add static/statues_model/ to activate.",
+  },
 };
 
-const liveCanvas = document.getElementById("liveCanvas");
-const guessCanvas = document.getElementById("guessCanvas");
+let currentLang = "fr";
 
-function photoPath(label) {
-  return "photos/" + label + ".png";
+function t(key) {
+  return (TRANSLATIONS[currentLang] || TRANSLATIONS.fr)[key] || key;
 }
 
+function applyTranslations() {
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.dataset.i18n;
+    if (key === "cat_spongebob") return; // brand name never translated
+    el.textContent = t(key);
+  });
+  document.documentElement.lang = currentLang;
+}
+
+// ── Category config ───────────────────────────────────────────────────────────
+const CATEGORIES = {
+  spongebob: {
+    modelUrl:    "https://teachablemachine.withgoogle.com/models/nlN9VfXC7/",
+    labels:      ["angry","bıkmış","boring","magara_adami","merhaba","ne_diyosun_be","ordek","perfect","rainbow","scream","sus"],
+    photoPath:   label => "photos/" + label + ".png",
+    liveScreen:  "liveGeneratorScreen",
+    guessScreen: "guessModeScreen",
+    liveTabKey:  "tab_live",
+    guessTabKey: "tab_levels",
+    titleFixed:  true,   // brand title stays "Bob L'éponge"
+    brandKey:    null,
+  },
+  statues: {
+    modelUrl:    null,   // set when user uploads: static/statues_model/
+    labels:      [],     // populated from model metadata at load time
+    photoPath:   label => "statues_photos/" + label + ".png",
+    liveScreen:  "statueLiveScreen",
+    guessScreen: "statueGuessScreen",
+    liveTabKey:  "tab_live",
+    guessTabKey: "tab_levels",
+    titleFixed:  false,
+    brandKey:    "cat_statues",
+  },
+};
+
+let activeCategory = "spongebob";
+let activeScreenId  = "liveGeneratorScreen";
+
+// ── Game constants ────────────────────────────────────────────────────────────
+const WEBCAM_WIDTH    = 960;
+const WEBCAM_HEIGHT   = 720;
+const MATCH_THRESHOLD = 0.75;
+const HOLD_FRAMES     = 4;
+const GUESS_LEVEL_COUNT = 12;
+
+// ── Shared webcam/model state ─────────────────────────────────────────────────
+const models  = {};   // keyed by category
+const webcams = {};   // keyed by category
+const inited  = {};   // keyed by category
+const loopActive = {}; // keyed by category
+
+// Per-category game state
+const liveState  = { spongebob: { running: false, holdFrames: 0 }, statues: { running: false, holdFrames: 0 } };
+const guessState = {
+  spongebob: { running: false, levelIndex: 0, target: null, queue: [], results: [], holdFrames: 0 },
+  statues:   { running: false, levelIndex: 0, target: null, queue: [], results: [], holdFrames: 0 },
+};
+
+// ── Utility ───────────────────────────────────────────────────────────────────
 function shuffled(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -36,248 +132,405 @@ function shuffled(arr) {
   return a;
 }
 
-// ── Progress dots ─────────────────────────────────────────────────────────────
-function renderGuessProgress() {
-  const container = document.getElementById("guessProgress");
-  if (!container) return;
-  const total = Math.min(GUESS_LEVEL_COUNT, LABELS.length);
-  container.innerHTML = state.guess.results
-    .slice(0, total)
-    .map(s => '<span class="guess-progress-dot' + (s ? " is-" + s : "") + '"></span>')
-    .join("") +
-    Array(Math.max(0, total - state.guess.results.length))
-      .fill('<span class="guess-progress-dot"></span>')
-      .join("");
-}
+function el(id) { return document.getElementById(id); }
 
-// ── Targets ───────────────────────────────────────────────────────────────────
-function setLiveTarget(label) {
-  const img = document.getElementById("liveTargetImage");
-  img.src = photoPath(label);
-  img.style.display = "block";
-  document.getElementById("livePlaceholder").style.display = "none";
-  const labelBar = document.getElementById("liveLabelBar");
-  if (labelBar) {
-    labelBar.style.display = "flex";
-    document.getElementById("liveMemeLabel").textContent = label.replace(/_/g, " ");
-  }
-  document.getElementById("liveTargetTitle").textContent = label.replace(/_/g, " ");
-}
+// ── Topbar tabs (dynamic) ─────────────────────────────────────────────────────
+function renderTabs() {
+  const cat = CATEGORIES[activeCategory];
+  const modesEl = el("topbarModes");
+  modesEl.innerHTML = "";
 
-function setGuessTarget(label) {
-  state.guess.target = label;
-  state.guess.holdFrames = 0;
-  const img = document.getElementById("guessTargetImage");
-  img.src = photoPath(label);
-  img.style.display = "block";
-  document.getElementById("guessPlaceholder").style.display = "none";
-  const labelBar = document.getElementById("guessLabelBar");
-  if (labelBar) {
-    labelBar.style.display = "flex";
-    document.getElementById("guessMemeLabel").textContent = label.replace(/_/g, " ");
-  }
-  document.getElementById("guessLevelTitle").textContent = "Niveau " + (state.guess.levelIndex + 1);
-}
-
-// ── Badges / hints ────────────────────────────────────────────────────────────
-function showSuccess(mode, visible) {
-  document.getElementById(mode + "SuccessBadge").classList.toggle("hidden", !visible);
-}
-
-function renderHints(matched, probability, label) {
-  const el = document.getElementById("liveHints");
-  if (!el) return;
-  const name = (label || "—").replace(/_/g, " ");
-  const msg = matched
-    ? name + " — tiens la pose !"
-    : "Plus proche : " + name + " (" + (probability * 100).toFixed(0) + "%)";
-  el.innerHTML = '<span class="hint-chip">' + msg + "</span>";
-}
-
-// ── Model + webcam ────────────────────────────────────────────────────────────
-async function initModel() {
-  if (state.initialized) return;
-  const modelURL = MODEL_URL + "model.json";
-  const metadataURL = MODEL_URL + "metadata.json";
-  state.model = await tmPose.load(modelURL, metadataURL);
-  state.webcam = new tmPose.Webcam(WEBCAM_WIDTH, WEBCAM_HEIGHT, true);
-  await state.webcam.setup();
-  await state.webcam.play();
-  state.initialized = true;
-}
-
-async function ensureLoop() {
-  if (state.loopStarted) return;
-  await initModel();
-  state.loopStarted = true;
-  window.requestAnimationFrame(loop);
-}
-
-async function loop() {
-  state.webcam.update();
-  await predict();
-  window.requestAnimationFrame(loop);
-}
-
-// ── Draw ──────────────────────────────────────────────────────────────────────
-function drawToCanvas(canvas) {
-  const ctx = canvas.getContext("2d");
-  canvas.width = WEBCAM_WIDTH;
-  canvas.height = WEBCAM_HEIGHT;
-  ctx.drawImage(state.webcam.canvas, 0, 0);
-}
-
-// ── Predict ───────────────────────────────────────────────────────────────────
-async function predict() {
-  if (!state.model || !state.webcam) return;
-  const { pose, posenetOutput } = await state.model.estimatePose(state.webcam.canvas);
-  const predictions = await state.model.predict(posenetOutput);
-
-  // En yüksek skorlu label → aktif state
-  predictions.sort((a, b) => b.probability - a.probability);
-  const top = predictions[0];
-  const topLabel = top ? top.className : null;
-  const topProb = top ? top.probability : 0;
-  const matched = topProb >= MATCH_THRESHOLD;
-
-  drawToCanvas(liveCanvas);
-  drawToCanvas(guessCanvas);
-
-  if (matched && topLabel) setLiveTarget(topLabel);
-  renderHints(matched, topProb, topLabel);
-  showSuccess("live", false);
-
-  handleLiveMode(matched, topLabel, topProb);
-  handleGuessMode(predictions);
-}
-
-// ── Live mode ─────────────────────────────────────────────────────────────────
-function handleLiveMode(matched, label, probability) {
-  if (!state.live.running) return;
-  state.live.holdFrames = matched ? state.live.holdFrames + 1 : 0;
-  renderHints(matched, probability, label);
-  showSuccess("live", state.live.holdFrames >= HOLD_FRAMES);
-}
-
-// ── Guess mode ────────────────────────────────────────────────────────────────
-function handleGuessMode(predictions) {
-  if (!state.guess.running || !state.guess.target) return;
-  const match = predictions.find(p => p.className === state.guess.target);
-  const probability = match ? match.probability : 0;
-  const matched = probability >= MATCH_THRESHOLD;
-  state.guess.holdFrames = matched ? state.guess.holdFrames + 1 : 0;
-  if (state.guess.holdFrames >= HOLD_FRAMES) completeGuessLevel("correct");
-}
-
-function showResultsPopup() {
-  const correct = state.guess.results.filter(r => r === "correct").length;
-  const total = state.guess.queue.length;
-  document.getElementById("resultsScore").textContent = correct;
-  document.getElementById("resultsTotal").textContent = "/" + total;
-  const dots = document.getElementById("resultsDots");
-  dots.innerHTML = state.guess.results.map(r =>
-    '<span class="guess-progress-dot is-' + r + '"></span>'
-  ).join("");
-  document.getElementById("resultsPopup").classList.remove("hidden");
-}
-
-function hideResultsPopup() {
-  document.getElementById("resultsPopup").classList.add("hidden");
-}
-
-function advanceGuessLevel() {
-  state.guess.levelIndex += 1;
-  if (state.guess.levelIndex >= state.guess.queue.length) {
-    state.guess.running = false;
-    state.guess.target = null;
-    showResultsPopup();
-    return;
-  }
-  setGuessTarget(state.guess.queue[state.guess.levelIndex]);
-  state.guess.running = true;
-}
-
-function completeGuessLevel(result) {
-  state.guess.running = false;
-  state.guess.results[state.guess.levelIndex] = result;
-  renderGuessProgress();
-  if (result === "correct") showSuccess("guess", true);
-  setTimeout(function () {
-    showSuccess("guess", false);
-    advanceGuessLevel();
-  }, result === "correct" ? 900 : 150);
-}
-
-// ── Start / stop ──────────────────────────────────────────────────────────────
-async function startLiveMode() {
-  await ensureLoop();
-  state.live.running = true;
-  state.live.holdFrames = 0;
-  showSuccess("live", false);
-  const btn = document.getElementById("startLiveMode");
-  btn.textContent = "◼ Arrêter";
-  btn.onclick = stopLiveMode;
-}
-
-function stopLiveMode() {
-  state.live.running = false;
-  const btn = document.getElementById("startLiveMode");
-  btn.textContent = "▶ Jouer";
-  btn.onclick = () => startLiveMode().catch(onModelError);
-}
-
-async function startGuessMode() {
-  await ensureLoop();
-  const total = Math.min(GUESS_LEVEL_COUNT, LABELS.length);
-  state.guess.queue = shuffled(LABELS).slice(0, total);
-  state.guess.running = true;
-  state.guess.levelIndex = 0;
-  state.guess.results = [];
-  state.guess.holdFrames = 0;
-  renderGuessProgress();
-  setGuessTarget(state.guess.queue[0]);
-  showSuccess("guess", false);
-  const btn = document.getElementById("startGuessMode");
-  btn.textContent = "◼ Arrêter";
-  btn.onclick = stopGuessMode;
-}
-
-function stopGuessMode() {
-  state.guess.running = false;
-  const btn = document.getElementById("startGuessMode");
-  btn.textContent = "▶ Jouer";
-  btn.onclick = () => startGuessMode().catch(onModelError);
-}
-
-function onModelError(err) {
-  console.error(err);
-  alert("Impossible de charger le modèle Teachable Machine.");
+  [
+    { key: cat.liveTabKey,  screen: cat.liveScreen  },
+    { key: cat.guessTabKey, screen: cat.guessScreen },
+  ].forEach(({ key, screen }) => {
+    const btn = document.createElement("button");
+    btn.className = "mode-tab" + (screen === activeScreenId ? " active" : "");
+    btn.textContent = t(key);
+    btn.dataset.screen = screen;
+    btn.addEventListener("click", () => switchScreen(screen));
+    modesEl.appendChild(btn);
+  });
 }
 
 // ── Screen switch ─────────────────────────────────────────────────────────────
 function switchScreen(screenId) {
-  document.querySelectorAll(".screen").forEach(el => el.classList.remove("active"));
-  document.querySelectorAll(".mode-tab").forEach(el => el.classList.remove("active"));
-  document.getElementById(screenId).classList.add("active");
-  document.querySelector('[data-screen="' + screenId + '"]').classList.add("active");
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  const target = document.getElementById(screenId);
+  if (target) target.classList.add("active");
+  activeScreenId = screenId;
+  renderTabs();
+}
+
+// ── Category switch ───────────────────────────────────────────────────────────
+function switchCategory(cat) {
+  activeCategory = cat;
+  const cfg = CATEGORIES[cat];
+
+  // Update brand title
+  const titleEl = el("topbarTitle");
+  if (cfg.titleFixed) {
+    titleEl.textContent = "Bob L'éponge";
+  } else {
+    titleEl.textContent = t(cfg.brandKey);
+  }
+
+  // Update category button label
+  el("categoryLabel").textContent = cat === "spongebob" ? "Bob L'éponge" : t("cat_statues");
+
+  // Switch to this category's live screen
+  switchScreen(cfg.liveScreen);
+}
+
+// ── Progress dots ─────────────────────────────────────────────────────────────
+function renderProgress(containerId, results, total) {
+  const container = el(containerId);
+  if (!container) return;
+  container.innerHTML =
+    results.slice(0, total).map(s => '<span class="guess-progress-dot' + (s ? " is-" + s : "") + '"></span>').join("") +
+    Array(Math.max(0, total - results.length)).fill('<span class="guess-progress-dot"></span>').join("");
+}
+
+// ── Targets ───────────────────────────────────────────────────────────────────
+function setLiveTarget(cat, label) {
+  const cfg = CATEGORIES[cat];
+  if (cat === "spongebob") {
+    el("liveTargetImage").src = cfg.photoPath(label);
+    el("liveTargetImage").style.display = "block";
+    el("livePlaceholder").style.display = "none";
+    el("liveLabelBar").style.display = "flex";
+    el("liveMemeLabel").textContent = label.replace(/_/g, " ");
+    el("liveTargetTitle").textContent = label.replace(/_/g, " ");
+  } else {
+    el("statueLiveTargetImage").src = cfg.photoPath(label);
+    el("statueLiveTargetImage").style.display = "block";
+    el("statueLivePlaceholder").style.display = "none";
+    el("statueLiveLabelBar").style.display = "flex";
+    el("statueLiveMemeLabel").textContent = label.replace(/_/g, " ");
+    el("statueLiveTargetTitle").textContent = label.replace(/_/g, " ");
+  }
+}
+
+function setGuessTarget(cat, label) {
+  const cfg = CATEGORIES[cat];
+  const gs = guessState[cat];
+  gs.target = label;
+  gs.holdFrames = 0;
+  if (cat === "spongebob") {
+    el("guessTargetImage").src = cfg.photoPath(label);
+    el("guessTargetImage").style.display = "block";
+    el("guessPlaceholder").style.display = "none";
+    el("guessLabelBar").style.display = "flex";
+    el("guessMemeLabel").textContent = label.replace(/_/g, " ");
+    el("guessLevelTitle").textContent = t("level_n").replace("1", gs.levelIndex + 1);
+  } else {
+    el("statueGuessTargetImage").src = cfg.photoPath(label);
+    el("statueGuessTargetImage").style.display = "block";
+    el("statueGuessPlaceholder").style.display = "none";
+    el("statueGuessLabelBar").style.display = "flex";
+    el("statueGuessMemeLabel").textContent = label.replace(/_/g, " ");
+    el("statueGuessLevelTitle").textContent = t("level_n").replace("1", gs.levelIndex + 1);
+  }
+}
+
+// ── Badges / hints ────────────────────────────────────────────────────────────
+function showSuccess(badgeId, visible) {
+  const badge = el(badgeId);
+  if (badge) badge.classList.toggle("hidden", !visible);
+}
+
+function renderHints(hintsId, matched, probability, label) {
+  const elH = el(hintsId);
+  if (!elH) return;
+  const name = (label || "—").replace(/_/g, " ");
+  const msg = matched
+    ? name + t("hint_hold")
+    : t("hint_closer") + name + " (" + (probability * 100).toFixed(0) + "%)";
+  elH.innerHTML = '<span class="hint-chip">' + msg + "</span>";
+}
+
+// ── Model + webcam ────────────────────────────────────────────────────────────
+async function initModel(cat) {
+  if (inited[cat]) return;
+  const cfg = CATEGORIES[cat];
+  if (!cfg.modelUrl) {
+    alert(t("statues_no_model"));
+    throw new Error("no model url");
+  }
+  const modelURL    = cfg.modelUrl + "model.json";
+  const metadataURL = cfg.modelUrl + "metadata.json";
+  models[cat]  = await tmPose.load(modelURL, metadataURL);
+
+  // For statues, pull labels from model metadata
+  if (cat === "statues" && models[cat].getTotalClasses) {
+    cfg.labels = models[cat].getClassLabels ? models[cat].getClassLabels() : cfg.labels;
+  }
+
+  webcams[cat] = new tmPose.Webcam(WEBCAM_WIDTH, WEBCAM_HEIGHT, true);
+  await webcams[cat].setup();
+  await webcams[cat].play();
+  inited[cat] = true;
+}
+
+async function ensureLoop(cat) {
+  if (loopActive[cat]) return;
+  await initModel(cat);
+  loopActive[cat] = true;
+  window.requestAnimationFrame(() => loop(cat));
+}
+
+async function loop(cat) {
+  if (!loopActive[cat]) return;
+  webcams[cat].update();
+  await predict(cat);
+  window.requestAnimationFrame(() => loop(cat));
+}
+
+// ── Draw ──────────────────────────────────────────────────────────────────────
+function drawToCanvas(cat, canvasId) {
+  const canvas = el(canvasId);
+  if (!canvas || !webcams[cat]) return;
+  const ctx = canvas.getContext("2d");
+  canvas.width  = WEBCAM_WIDTH;
+  canvas.height = WEBCAM_HEIGHT;
+  ctx.drawImage(webcams[cat].canvas, 0, 0);
+}
+
+// ── Predict ───────────────────────────────────────────────────────────────────
+async function predict(cat) {
+  const model  = models[cat];
+  const webcam = webcams[cat];
+  if (!model || !webcam) return;
+
+  const { posenetOutput } = await model.estimatePose(webcam.canvas);
+  const predictions = await model.predict(posenetOutput);
+  predictions.sort((a, b) => b.probability - a.probability);
+  const top      = predictions[0];
+  const topLabel = top ? top.className : null;
+  const topProb  = top ? top.probability : 0;
+  const matched  = topProb >= MATCH_THRESHOLD;
+
+  if (cat === "spongebob") {
+    drawToCanvas(cat, "liveCanvas");
+    drawToCanvas(cat, "guessCanvas");
+    if (matched && topLabel) setLiveTarget(cat, topLabel);
+    renderHints("liveHints", matched, topProb, topLabel);
+    showSuccess("liveSuccessBadge", false);
+    handleLiveMode(cat, matched, topLabel, topProb);
+    handleGuessMode(cat, predictions);
+  } else {
+    drawToCanvas(cat, "statueLiveCanvas");
+    drawToCanvas(cat, "statueGuessCanvas");
+    if (matched && topLabel) setLiveTarget(cat, topLabel);
+    renderHints("statueLiveHints", matched, topProb, topLabel);
+    showSuccess("statueLiveSuccessBadge", false);
+    handleLiveMode(cat, matched, topLabel, topProb);
+    handleGuessMode(cat, predictions);
+  }
+}
+
+// ── Live mode ─────────────────────────────────────────────────────────────────
+function handleLiveMode(cat, matched, label, probability) {
+  const ls = liveState[cat];
+  if (!ls.running) return;
+  ls.holdFrames = matched ? ls.holdFrames + 1 : 0;
+  const hintsId   = cat === "spongebob" ? "liveHints"          : "statueLiveHints";
+  const badgeId   = cat === "spongebob" ? "liveSuccessBadge"   : "statueLiveSuccessBadge";
+  renderHints(hintsId, matched, probability, label);
+  showSuccess(badgeId, ls.holdFrames >= HOLD_FRAMES);
+}
+
+// ── Guess mode ────────────────────────────────────────────────────────────────
+function handleGuessMode(cat, predictions) {
+  const gs = guessState[cat];
+  if (!gs.running || !gs.target) return;
+  const match       = predictions.find(p => p.className === gs.target);
+  const probability = match ? match.probability : 0;
+  const matched     = probability >= MATCH_THRESHOLD;
+  gs.holdFrames = matched ? gs.holdFrames + 1 : 0;
+  if (gs.holdFrames >= HOLD_FRAMES) completeGuessLevel(cat, "correct");
+}
+
+// ── Results popup ─────────────────────────────────────────────────────────────
+function showResultsPopup(cat) {
+  const gs      = guessState[cat];
+  const correct = gs.results.filter(r => r === "correct").length;
+  el("resultsScore").textContent = correct;
+  el("resultsTotal").textContent = "/" + gs.queue.length;
+  el("resultsDots").innerHTML    = gs.results.map(r =>
+    '<span class="guess-progress-dot is-' + r + '"></span>'
+  ).join("");
+  el("resultsPopup").classList.remove("hidden");
+  // store last category so restart knows which one
+  el("resultsPopup").dataset.cat = cat;
+}
+
+function hideResultsPopup() {
+  el("resultsPopup").classList.add("hidden");
+}
+
+function advanceGuessLevel(cat) {
+  const gs        = guessState[cat];
+  const progressId = cat === "spongebob" ? "guessProgress" : "statueGuessProgress";
+  gs.levelIndex  += 1;
+  if (gs.levelIndex >= gs.queue.length) {
+    gs.running = false;
+    gs.target  = null;
+    showResultsPopup(cat);
+    return;
+  }
+  setGuessTarget(cat, gs.queue[gs.levelIndex]);
+  gs.running = true;
+}
+
+function completeGuessLevel(cat, result) {
+  const gs        = guessState[cat];
+  const badgeId   = cat === "spongebob" ? "guessSuccessBadge" : "statueGuessSuccessBadge";
+  const progressId = cat === "spongebob" ? "guessProgress"    : "statueGuessProgress";
+  const total     = Math.min(GUESS_LEVEL_COUNT, CATEGORIES[cat].labels.length);
+  gs.running = false;
+  gs.results[gs.levelIndex] = result;
+  renderProgress(progressId, gs.results, total);
+  if (result === "correct") showSuccess(badgeId, true);
+  setTimeout(function () {
+    showSuccess(badgeId, false);
+    advanceGuessLevel(cat);
+  }, result === "correct" ? 900 : 150);
+}
+
+// ── Start / stop live ─────────────────────────────────────────────────────────
+async function startLive(cat) {
+  await ensureLoop(cat);
+  liveState[cat].running    = true;
+  liveState[cat].holdFrames = 0;
+  const badgeId = cat === "spongebob" ? "liveSuccessBadge" : "statueLiveSuccessBadge";
+  showSuccess(badgeId, false);
+  const btnId = cat === "spongebob" ? "startLiveMode" : "startStatueLive";
+  const btn   = el(btnId);
+  btn.textContent = t("btn_stop");
+  btn.onclick = () => stopLive(cat);
+}
+
+function stopLive(cat) {
+  liveState[cat].running = false;
+  const btnId = cat === "spongebob" ? "startLiveMode" : "startStatueLive";
+  const btn   = el(btnId);
+  btn.textContent = t("btn_play");
+  btn.onclick = () => startLive(cat).catch(onModelError);
+}
+
+// ── Start / stop guess ────────────────────────────────────────────────────────
+async function startGuess(cat) {
+  await ensureLoop(cat);
+  const labels    = CATEGORIES[cat].labels;
+  const total     = Math.min(GUESS_LEVEL_COUNT, labels.length);
+  const gs        = guessState[cat];
+  const progressId = cat === "spongebob" ? "guessProgress" : "statueGuessProgress";
+  const badgeId   = cat === "spongebob" ? "guessSuccessBadge" : "statueGuessSuccessBadge";
+  gs.queue      = shuffled(labels).slice(0, total);
+  gs.running    = true;
+  gs.levelIndex = 0;
+  gs.results    = [];
+  gs.holdFrames = 0;
+  renderProgress(progressId, gs.results, total);
+  setGuessTarget(cat, gs.queue[0]);
+  showSuccess(badgeId, false);
+  const btnId = cat === "spongebob" ? "startGuessMode" : "startStatueGuess";
+  const btn   = el(btnId);
+  btn.textContent = t("btn_stop");
+  btn.onclick = () => stopGuess(cat);
+}
+
+function stopGuess(cat) {
+  guessState[cat].running = false;
+  const btnId = cat === "spongebob" ? "startGuessMode" : "startStatueGuess";
+  const btn   = el(btnId);
+  btn.textContent = t("btn_play");
+  btn.onclick = () => startGuess(cat).catch(onModelError);
+}
+
+function onModelError(err) {
+  console.error(err);
+  if (err.message !== "no model url") alert(t("no_model"));
+}
+
+// ── Dropdown logic ────────────────────────────────────────────────────────────
+function setupDropdown(btnId, menuId, onSelect) {
+  const btn  = el(btnId);
+  const menu = el(menuId);
+
+  btn.addEventListener("click", e => {
+    e.stopPropagation();
+    const open = menu.classList.toggle("open");
+    btn.setAttribute("aria-expanded", open);
+  });
+
+  menu.querySelectorAll("li[role=menuitem]").forEach(item => {
+    item.addEventListener("click", () => {
+      onSelect(item);
+      menu.classList.remove("open");
+      btn.setAttribute("aria-expanded", false);
+    });
+  });
+
+  document.addEventListener("click", () => {
+    menu.classList.remove("open");
+    btn.setAttribute("aria-expanded", false);
+  });
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
-document.querySelectorAll(".mode-tab").forEach(btn => {
-  btn.addEventListener("click", () => switchScreen(btn.dataset.screen));
+
+// Category dropdown
+setupDropdown("categoryBtn", "categoryMenu", item => {
+  switchCategory(item.dataset.category);
 });
 
-document.getElementById("startLiveMode").addEventListener("click", () => startLiveMode().catch(onModelError));
-document.getElementById("startGuessMode").addEventListener("click", () => startGuessMode().catch(onModelError));
-document.getElementById("skipGuessLevel").addEventListener("click", () => {
-  if (state.guess.running && state.guess.target) completeGuessLevel("skipped");
+// Language dropdown
+setupDropdown("langBtn", "langMenu", item => {
+  currentLang = item.dataset.lang;
+  el("langLabel").textContent = currentLang.toUpperCase();
+  applyTranslations();
+  renderTabs();
+  // re-render dynamic button texts
+  ["startLiveMode","startGuessMode","startStatueLive","startStatueGuess"].forEach(id => {
+    const b = el(id);
+    if (b && b.textContent.trim() !== t("btn_stop")) b.textContent = t("btn_play");
+  });
+  el("skipGuessLevel").textContent  = t("btn_skip");
+  el("skipStatueLevel").textContent = t("btn_skip");
 });
 
-document.getElementById("liveTargetImage").style.display = "none";
-document.getElementById("guessTargetImage").style.display = "none";
-renderGuessProgress();
+// Spongebob buttons
+el("startLiveMode").addEventListener("click",  () => startLive("spongebob").catch(onModelError));
+el("startGuessMode").addEventListener("click", () => startGuess("spongebob").catch(onModelError));
+el("skipGuessLevel").addEventListener("click", () => {
+  if (guessState.spongebob.running && guessState.spongebob.target) completeGuessLevel("spongebob", "skipped");
+});
 
-document.getElementById("resultsRestart").addEventListener("click", function () {
+// Statues buttons
+el("startStatueLive").addEventListener("click",  () => startLive("statues").catch(onModelError));
+el("startStatueGuess").addEventListener("click", () => startGuess("statues").catch(onModelError));
+el("skipStatueLevel").addEventListener("click", () => {
+  if (guessState.statues.running && guessState.statues.target) completeGuessLevel("statues", "skipped");
+});
+
+// Results popup restart
+el("resultsRestart").addEventListener("click", function () {
+  const cat = el("resultsPopup").dataset.cat || "spongebob";
   hideResultsPopup();
-  startGuessMode().catch(onModelError);
+  startGuess(cat).catch(onModelError);
 });
+
+// Initial setup
+el("liveTargetImage").style.display        = "none";
+el("guessTargetImage").style.display       = "none";
+el("statueLiveTargetImage").style.display  = "none";
+el("statueGuessTargetImage").style.display = "none";
+
+renderProgress("guessProgress",       [], Math.min(GUESS_LEVEL_COUNT, CATEGORIES.spongebob.labels.length));
+renderProgress("statueGuessProgress", [], GUESS_LEVEL_COUNT);
+
+applyTranslations();
+renderTabs();
+switchCategory("spongebob");

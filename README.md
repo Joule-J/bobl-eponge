@@ -47,6 +47,6 @@ No build command is required.
 ## Notes
 
 - The app first tries the Teachable Machine cloud model:
-  `https://teachablemachine.withgoogle.com/models/tTYdfh6E2/`
+  `https://teachablemachine.withgoogle.com/models/nlN9VfXC7/`
 - If you later want a local model export, place it in `static/my_model/`
 - Webcam requires HTTPS in production, which Vercel provides automatically

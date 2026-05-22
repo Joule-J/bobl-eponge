@@ -12,52 +12,86 @@
   <body>
     <div class="app-body">
       <div class="topbar">
-        <nav class="topbar-modes">
-          <button class="mode-tab active" data-screen="liveGeneratorScreen">
-            Image Live
-          </button>
-          <button class="mode-tab" data-screen="guessModeScreen">
-            Mode Niveaux
-          </button>
+
+        <!-- LEFT: mode tabs (dynamic per category) -->
+        <nav class="topbar-modes" id="topbarModes">
+          <!-- filled by JS -->
         </nav>
+
+        <!-- CENTER: brand -->
         <div class="topbar-brand">
-          <span class="topbar-title" id="topbarTitle">Bob L'eponge</span>
+          <span class="topbar-title" id="topbarTitle">Bob L'éponge</span>
           <span class="topbar-version">v1.3</span>
+        </div>
+
+        <!-- RIGHT: category + language selectors -->
+        <div class="topbar-controls">
+
+          <!-- Category dropdown -->
+          <div class="dropdown" id="categoryDropdown">
+            <button class="dropdown-btn" id="categoryBtn" aria-haspopup="true" aria-expanded="false">
+              <span id="categoryLabel" data-i18n="cat_spongebob">Bob L'éponge</span>
+              <span class="dropdown-arrow">▾</span>
+            </button>
+            <ul class="dropdown-menu" id="categoryMenu" role="menu">
+              <li role="menuitem" data-category="spongebob">
+                <span>Bob L'éponge</span>
+              </li>
+              <li role="menuitem" data-category="statues">
+                <span data-i18n="cat_statues">Statues</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Language dropdown -->
+          <div class="dropdown" id="langDropdown">
+            <button class="dropdown-btn" id="langBtn" aria-haspopup="true" aria-expanded="false">
+              <span id="langLabel">FR</span>
+              <span class="dropdown-arrow">▾</span>
+            </button>
+            <ul class="dropdown-menu" id="langMenu" role="menu">
+              <li role="menuitem" data-lang="fr"><span>Français</span></li>
+              <li role="menuitem" data-lang="en"><span>English</span></li>
+            </ul>
+          </div>
+
         </div>
       </div>
 
       <!-- SCREENS -->
       <div class="screens">
 
-        <!-- ── LIVE GENERATOR ── -->
-        <section id="liveGeneratorScreen" class="screen active">
+        <!-- ══════════════════════════════════════════
+             CATEGORY: SPONGEBOB
+        ══════════════════════════════════════════ -->
 
-          <!-- Camera stage -->
+        <!-- ── SPONGEBOB · LIVE ── -->
+        <section id="liveGeneratorScreen" class="screen active" data-category="spongebob">
+
           <div class="stage">
             <div class="stage-header">
               <div class="stage-meta">
-                <span class="stage-eyebrow">Caméra</span>
-                <span class="stage-title">Prends la pose</span>
+                <span class="stage-eyebrow" data-i18n="camera">Caméra</span>
+                <span class="stage-title" data-i18n="take_pose">Prends la pose</span>
               </div>
-              <button class="btn btn-primary btn-start" id="startLiveMode">▶ Jouer</button>
+              <button class="btn btn-primary btn-start" id="startLiveMode" data-i18n="btn_play">▶ Jouer</button>
             </div>
 
             <div class="video-wrap">
               <canvas id="liveCanvas" class="pose-canvas"></canvas>
               <div class="video-overlay">
-                <div id="liveSuccessBadge" class="badge badge-success hidden">✓ Matched</div>
+                <div id="liveSuccessBadge" class="badge badge-success hidden" data-i18n="matched">✓ Matched</div>
               </div>
             </div>
 
             <div class="hints-bar" id="liveHints"></div>
           </div>
 
-          <!-- Meme stage -->
           <div class="stage">
             <div class="stage-header">
               <div class="stage-meta">
-                <span class="stage-eyebrow">Prédiction</span>
-                <span class="stage-title" id="liveTargetTitle">En attente d'image…</span>
+                <span class="stage-eyebrow" data-i18n="prediction">Prédiction</span>
+                <span class="stage-title" id="liveTargetTitle" data-i18n="waiting">En attente d'image…</span>
               </div>
             </div>
 
@@ -65,32 +99,30 @@
               <img id="liveTargetImage" alt="" />
               <div class="meme-placeholder" id="livePlaceholder">
                 <span class="ph-icon">◻</span>
-                <p>Pose toi — l'image apparaît</p>
+                <p data-i18n="live_placeholder">Pose toi — l'image apparaît</p>
               </div>
               <div class="meme-label-bar" id="liveLabelBar" style="display:none">
                 <span class="meme-name" id="liveMemeLabel">—</span>
-                <span class="meme-tag">Image</span>
+                <span class="meme-tag" data-i18n="tag_image">Image</span>
               </div>
-
             </div>
           </div>
 
         </section>
 
-        <!-- ── LEVEL MODE ── -->
-        <section id="guessModeScreen" class="screen">
+        <!-- ── SPONGEBOB · LEVEL ── -->
+        <section id="guessModeScreen" class="screen" data-category="spongebob">
 
-          <!-- Meme target stage -->
           <div class="stage">
             <div class="stage-header">
               <div class="stage-meta">
-                <span class="stage-eyebrow">Objectif</span>
-                <span class="stage-title" id="guessLevelTitle">Niveau 1</span>
+                <span class="stage-eyebrow" data-i18n="objective">Objectif</span>
+                <span class="stage-title" id="guessLevelTitle" data-i18n="level_n">Niveau 1</span>
               </div>
               <div class="level-indicator">
                 <div class="guess-progress" id="guessProgress" aria-label="Progression des niveaux"></div>
-                <button class="btn btn-secondary" id="skipGuessLevel">Pas</button>
-                <button class="btn btn-primary btn-start" id="startGuessMode">▶ Jouer</button>
+                <button class="btn btn-secondary" id="skipGuessLevel" data-i18n="btn_skip">Pas</button>
+                <button class="btn btn-primary btn-start" id="startGuessMode" data-i18n="btn_play">▶ Jouer</button>
               </div>
             </div>
 
@@ -98,27 +130,120 @@
               <img id="guessTargetImage" alt="" />
               <div class="meme-placeholder" id="guessPlaceholder">
                 <span class="ph-icon">◻</span>
-                <p>Jouer — l'objectif apparaît</p>
+                <p data-i18n="guess_placeholder">Jouer — l'objectif apparaît</p>
               </div>
               <div class="meme-label-bar" id="guessLabelBar" style="display:none">
                 <span class="meme-name" id="guessMemeLabel">—</span>
-                <span class="meme-tag">Objectif</span>
+                <span class="meme-tag" data-i18n="tag_target">Objectif</span>
               </div>
             </div>
           </div>
 
-          <!-- Camera stage -->
           <div class="stage">
             <div class="stage-header">
               <div class="stage-meta">
-                <span class="stage-eyebrow">Caméra</span>
-                <span class="stage-title">Tiens la pose, passe le niveau</span>
+                <span class="stage-eyebrow" data-i18n="camera">Caméra</span>
+                <span class="stage-title" data-i18n="hold_pose">Tiens la pose, passe le niveau</span>
               </div>
-              <div id="guessSuccessBadge" class="badge badge-success hidden">✓ Suivant</div>
+              <div id="guessSuccessBadge" class="badge badge-success hidden" data-i18n="next">✓ Suivant</div>
             </div>
 
             <div class="video-wrap">
               <canvas id="guessCanvas" class="pose-canvas"></canvas>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ══════════════════════════════════════════
+             CATEGORY: STATUES
+        ══════════════════════════════════════════ -->
+
+        <!-- ── STATUES · LIVE ── -->
+        <section id="statueLiveScreen" class="screen" data-category="statues">
+
+          <div class="stage">
+            <div class="stage-header">
+              <div class="stage-meta">
+                <span class="stage-eyebrow" data-i18n="camera">Caméra</span>
+                <span class="stage-title" data-i18n="take_pose">Prends la pose</span>
+              </div>
+              <button class="btn btn-primary btn-start" id="startStatueLive" data-i18n="btn_play">▶ Jouer</button>
+            </div>
+
+            <div class="video-wrap">
+              <canvas id="statueLiveCanvas" class="pose-canvas"></canvas>
+              <div class="video-overlay">
+                <div id="statueLiveSuccessBadge" class="badge badge-success hidden" data-i18n="matched">✓ Matched</div>
+              </div>
+            </div>
+
+            <div class="hints-bar" id="statueLiveHints"></div>
+          </div>
+
+          <div class="stage">
+            <div class="stage-header">
+              <div class="stage-meta">
+                <span class="stage-eyebrow" data-i18n="prediction">Prédiction</span>
+                <span class="stage-title" id="statueLiveTargetTitle" data-i18n="waiting">En attente d'image…</span>
+              </div>
+            </div>
+
+            <div class="meme-wrap">
+              <img id="statueLiveTargetImage" alt="" />
+              <div class="meme-placeholder" id="statueLivePlaceholder">
+                <span class="ph-icon">◻</span>
+                <p data-i18n="live_placeholder">Pose toi — l'image apparaît</p>
+              </div>
+              <div class="meme-label-bar" id="statueLiveLabelBar" style="display:none">
+                <span class="meme-name" id="statueLiveMemeLabel">—</span>
+                <span class="meme-tag" data-i18n="tag_image">Image</span>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ── STATUES · LEVEL ── -->
+        <section id="statueGuessScreen" class="screen" data-category="statues">
+
+          <div class="stage">
+            <div class="stage-header">
+              <div class="stage-meta">
+                <span class="stage-eyebrow" data-i18n="objective">Objectif</span>
+                <span class="stage-title" id="statueGuessLevelTitle" data-i18n="level_n">Niveau 1</span>
+              </div>
+              <div class="level-indicator">
+                <div class="guess-progress" id="statueGuessProgress"></div>
+                <button class="btn btn-secondary" id="skipStatueLevel" data-i18n="btn_skip">Pas</button>
+                <button class="btn btn-primary btn-start" id="startStatueGuess" data-i18n="btn_play">▶ Jouer</button>
+              </div>
+            </div>
+
+            <div class="meme-wrap">
+              <img id="statueGuessTargetImage" alt="" />
+              <div class="meme-placeholder" id="statueGuessPlaceholder">
+                <span class="ph-icon">◻</span>
+                <p data-i18n="guess_placeholder">Jouer — l'objectif apparaît</p>
+              </div>
+              <div class="meme-label-bar" id="statueGuessLabelBar" style="display:none">
+                <span class="meme-name" id="statueGuessMemeLabel">—</span>
+                <span class="meme-tag" data-i18n="tag_target">Objectif</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="stage">
+            <div class="stage-header">
+              <div class="stage-meta">
+                <span class="stage-eyebrow" data-i18n="camera">Caméra</span>
+                <span class="stage-title" data-i18n="hold_pose">Tiens la pose, passe le niveau</span>
+              </div>
+              <div id="statueGuessSuccessBadge" class="badge badge-success hidden" data-i18n="next">✓ Suivant</div>
+            </div>
+
+            <div class="video-wrap">
+              <canvas id="statueGuessCanvas" class="pose-canvas"></canvas>
             </div>
           </div>
 
@@ -130,13 +255,13 @@
     <!-- Results popup -->
     <div id="resultsPopup" class="results-popup hidden">
       <div class="results-card">
-        <div class="results-title">Résultats</div>
+        <div class="results-title" data-i18n="results_title">Résultats</div>
         <div class="results-score-wrap">
           <span class="results-score" id="resultsScore">0</span>
           <span class="results-total" id="resultsTotal">/11</span>
         </div>
         <div class="results-dots" id="resultsDots"></div>
-        <button class="btn btn-primary results-restart" id="resultsRestart">↺ Recommencer</button>
+        <button class="btn btn-primary results-restart" id="resultsRestart" data-i18n="btn_restart">↺ Recommencer</button>
       </div>
     </div>
 
