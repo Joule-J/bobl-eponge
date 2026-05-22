@@ -180,8 +180,8 @@ async function predict() {
   const { pose, posenetOutput } = await state.model.estimatePose(state.webcam.canvas);
   const predictions = await state.model.predict(posenetOutput);
 
-  if (state.live.running)  drawPose(state.ctx.live, pose);
-  if (state.guess.running) drawPose(state.ctx.guess, pose);
+  drawPose(state.ctx.live, pose);
+  drawPose(state.ctx.guess, pose);
 
   predictions.sort(function (a, b) { return b.probability - a.probability; });
   const top = predictions[0] || null;
