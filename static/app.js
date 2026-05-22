@@ -1,14 +1,16 @@
-const MODEL_URLS = [
-  "static/my_model/",
-  "https://teachablemachine.withgoogle.com/models/tTYdfh6E2/",
-];
-const WEBCAM_WIDTH = 960;
-const WEBCAM_HEIGHT = 720;
+const MODEL_URL = "static/my_model/";
 const GUESS_LEVEL_COUNT = 12;
-const MATCH_THRESHOLD = 0.75;   // minimum confidence to count as a match
-const HOLD_MS = 1000;           // how long the pose must be held before level advances
+const MATCH_THRESHOLD = 0.75;
+const HOLD_MS = 1000;
 
-const STATIC_PHOTOS = [
+// Only show photos that exist in the model
+const MODEL_LABELS = [
+  "angry", "bıkmış", "rainbow", "boring", "kurnaz",
+  "magara_adami", "merhaba", "ne_diyosun_be", "ordek",
+  "perfect", "scream", "sus"
+];
+
+const ALL_PHOTOS = [
   { filename: "angry.png",         image_path: "photos/angry.png" },
   { filename: "boring.png",        image_path: "photos/boring.png" },
   { filename: "bıkmış.png",        image_path: "photos/bıkmış.png" },
@@ -27,11 +29,11 @@ const state = {
   photos: [],
   model: null,
   webcam: null,
-  labelCount: 0,
+  ctx: { live: null, guess: null },
+  maxPredictions: 0,
   initialized: false,
   loopStarted: false,
-  modelAvailable: false,
-  live: { running: false, target: null },
+  live: { running: false },
   guess: { running: false, levelIndex: 0, target: null, queue: [], results: [], holdStart: null },
 };
 
@@ -53,20 +55,20 @@ function photoStem(photo) {
 }
 
 function loadPhotos() {
-  state.photos = STATIC_PHOTOS;
-  if (state.photos.length && !state.guess.target) {
-    setGuessTarget(state.photos[0]);
-  }
+  // Only include photos whose stem matches a model label
+  state.photos = ALL_PHOTOS.filter(function (photo) {
+    return MODEL_LABELS.some(function (label) {
+      return normalizeName(label) === photoStem(photo);
+    });
+  });
   resetGuessProgress();
 }
 
 function shuffledPhotos(photos) {
   const items = photos.slice();
-  for (let index = items.length - 1; index > 0; index -= 1) {
-    const randomIndex = Math.floor(Math.random() * (index + 1));
-    const current = items[index];
-    items[index] = items[randomIndex];
-    items[randomIndex] = current;
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = items[i]; items[i] = items[j]; items[j] = tmp;
   }
   return items;
 }
@@ -88,8 +90,8 @@ function renderGuessProgress() {
   if (!container) return;
   const total = guessLevelLimit();
   let markup = "";
-  for (let index = 0; index < total; index += 1) {
-    markup += guessProgressMarkup(state.guess.results[index] || "");
+  for (let i = 0; i < total; i++) {
+    markup += guessProgressMarkup(state.guess.results[i] || "");
   }
   container.innerHTML = markup;
 }
@@ -99,31 +101,22 @@ function resetGuessProgress() {
   renderGuessProgress();
 }
 
-// ── Live mode target ──────────────────────────────────────────────────────────
+// ── Targets ───────────────────────────────────────────────────────────────────
 function setLiveTarget(photo) {
   state.live.target = photo;
-
   const img = document.getElementById("liveTargetImage");
   img.src = photo.image_path;
   img.style.display = "block";
-
   document.getElementById("livePlaceholder").style.display = "none";
   document.getElementById("liveTargetTitle").textContent = photoStem(photo).replace(/_/g, " ");
 }
 
-// ── Guess mode target ─────────────────────────────────────────────────────────
 function setGuessTarget(photo) {
   state.guess.target = photo;
-
   const img = document.getElementById("guessTargetImage");
   img.src = photo.image_path;
   img.style.display = "block";
-
   document.getElementById("guessPlaceholder").style.display = "none";
-
-  const labelBar = document.getElementById("guessLabelBar");
-  labelBar.style.display = "flex";
-  document.getElementById("guessMemeLabel").textContent = photoStem(photo).replace(/_/g, " ");
   document.getElementById("guessLevelTitle").textContent = "Niveau " + (state.guess.levelIndex + 1);
 }
 
@@ -132,114 +125,88 @@ function showSuccess(mode, visible) {
   document.getElementById(mode + "SuccessBadge").classList.toggle("hidden", !visible);
 }
 
-
-// ── Status bar ────────────────────────────────────────────────────────────────
-function setStatus(live, text) {
-  const user = document.querySelector(".topbar-user");
-  if (!user) return;
-  user.textContent = live ? "Inan" : text;
-}
-
-// ── Model init ────────────────────────────────────────────────────────────────
-async function initModel() {
+// ── Model + webcam init (TM official pattern) ─────────────────────────────────
+async function init() {
   if (state.initialized) return;
-  let lastError = null;
-  for (const baseUrl of MODEL_URLS) {
-    try {
-      const modelURL = baseUrl + "model.json";
-      const metadataURL = baseUrl + "metadata.json";
-      state.model = await tmPose.load(modelURL, metadataURL);
-      state.labelCount = state.model.getTotalClasses();
-      state.webcam = new tmPose.Webcam(WEBCAM_WIDTH, WEBCAM_HEIGHT, true);
-      await state.webcam.setup();
-      await state.webcam.play();
-      state.initialized = true;
-      state.modelAvailable = true;
-      setStatus(true, "Caméra active");
-      return;
-    } catch (error) {
-      lastError = error;
-    }
-  }
-  state.modelAvailable = false;
-  setStatus(false, "Modèle introuvable");
-  throw lastError;
+  const modelURL    = MODEL_URL + "model.json";
+  const metadataURL = MODEL_URL + "metadata.json";
+
+  state.model = await tmPose.load(modelURL, metadataURL);
+  state.maxPredictions = state.model.getTotalClasses();
+
+  const size = 400;
+  const flip = true;
+  state.webcam = new tmPose.Webcam(size, size, flip);
+  await state.webcam.setup();
+  await state.webcam.play();
+
+  liveCanvas.width  = size;
+  liveCanvas.height = size;
+  guessCanvas.width  = size;
+  guessCanvas.height = size;
+
+  state.ctx.live  = liveCanvas.getContext("2d");
+  state.ctx.guess = guessCanvas.getContext("2d");
+
+  state.initialized = true;
 }
 
 async function ensureLoop() {
-  if (state.loopStarted) return;
-  await initModel();
-  state.loopStarted = true;
-  window.requestAnimationFrame(loop);
+  await init();
+  if (!state.loopStarted) {
+    state.loopStarted = true;
+    window.requestAnimationFrame(loop);
+  }
 }
 
 async function loop() {
-  if (state.webcam) {
-    state.webcam.update();
-    await predict();
-  }
+  state.webcam.update();
+  await predict();
   window.requestAnimationFrame(loop);
 }
 
-// ── Draw ──────────────────────────────────────────────────────────────────────
-function drawPoseToCanvas(canvas) {
-  if (!state.webcam || !state.webcam.canvas) return;
-  const src = state.webcam.canvas;
-  if (canvas.width !== src.width) canvas.width = src.width;
-  if (canvas.height !== src.height) canvas.height = src.height;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(src, 0, 0);
-}
-
-// ── Prediction helpers ────────────────────────────────────────────────────────
-function predictionForTarget(predictions, targetPhoto) {
-  if (!targetPhoto) return null;
-  const target = photoStem(targetPhoto);
-  return predictions.find((item) => normalizeName(item.className) === target) || null;
-}
-
-function photoForPrediction(prediction) {
-  if (!prediction) return null;
-  const predictedStem = normalizeName(prediction.className);
-  return state.photos.find((item) => photoStem(item) === predictedStem) || null;
+// ── Draw (TM official pattern with skeleton) ──────────────────────────────────
+function drawPose(ctx, pose) {
+  if (!state.webcam.canvas) return;
+  ctx.drawImage(state.webcam.canvas, 0, 0);
+  if (pose) {
+    const minConf = 0.5;
+    tmPose.drawKeypoints(pose.keypoints, minConf, ctx);
+    tmPose.drawSkeleton(pose.keypoints, minConf, ctx);
+  }
 }
 
 // ── Predict ───────────────────────────────────────────────────────────────────
 async function predict() {
-  if (!state.model || !state.webcam) return;
   const { pose, posenetOutput } = await state.model.estimatePose(state.webcam.canvas);
   const predictions = await state.model.predict(posenetOutput);
-  predictions.sort((a, b) => b.probability - a.probability);
-  const topPrediction = predictions[0] || null;
-  const topPhoto = photoForPrediction(topPrediction);
 
-  drawPoseToCanvas(liveCanvas);
-  drawPoseToCanvas(guessCanvas);
-  if (topPhoto) setLiveTarget(topPhoto);
+  if (state.live.running)  drawPose(state.ctx.live, pose);
+  if (state.guess.running) drawPose(state.ctx.guess, pose);
 
-  handleLiveMode(predictions);
-  handleGuessMode(predictions);
+  predictions.sort(function (a, b) { return b.probability - a.probability; });
+  const top = predictions[0] || null;
+  const aboveThreshold = top && top.probability >= MATCH_THRESHOLD;
+
+  if (state.live.running) handleLiveMode(top, aboveThreshold);
+  if (state.guess.running) handleGuessMode(top, aboveThreshold);
 }
 
 // ── Live mode ─────────────────────────────────────────────────────────────────
-function handleLiveMode(predictions) {
-  if (!state.live.running) return;
-  const top = predictions[0] || null;
-  const aboveThreshold = top && top.probability >= MATCH_THRESHOLD;
-  const topPhoto = aboveThreshold ? photoForPrediction(top) : null;
-  if (topPhoto) setLiveTarget(topPhoto);
-
-  const probability = top ? top.probability : 0;
+function handleLiveMode(top, aboveThreshold) {
+  if (aboveThreshold) {
+    const photo = state.photos.find(function (p) {
+      return photoStem(p) === normalizeName(top.className);
+    });
+    if (photo) setLiveTarget(photo);
+  }
   showSuccess("live", aboveThreshold);
 }
 
 // ── Guess mode ────────────────────────────────────────────────────────────────
-function handleGuessMode(predictions) {
-  if (!state.guess.running || !state.guess.target) return;
-  const top = predictions[0] || null;
-  const aboveThreshold = top && top.probability >= MATCH_THRESHOLD;
-  const matched =
-    aboveThreshold &&
+function handleGuessMode(top, aboveThreshold) {
+  if (!state.guess.target) return;
+  const matched = aboveThreshold &&
     normalizeName(top.className) === photoStem(state.guess.target);
 
   if (matched) {
@@ -274,9 +241,7 @@ function completeGuessLevel(result) {
   state.guess.running = false;
   state.guess.results[state.guess.levelIndex] = result;
   renderGuessProgress();
-  if (result === "correct") {
-    showSuccess("guess", true);
-  }
+  if (result === "correct") showSuccess("guess", true);
   setTimeout(function () {
     showSuccess("guess", false);
     advanceGuessLevel();
@@ -285,7 +250,6 @@ function completeGuessLevel(result) {
 
 // ── Start / stop ──────────────────────────────────────────────────────────────
 async function startLiveMode() {
-  setStatus(false, "Chargement...");
   await ensureLoop();
   state.live.running = true;
   showSuccess("live", false);
@@ -296,19 +260,21 @@ async function startLiveMode() {
 
 function stopLiveMode() {
   state.live.running = false;
+  const ctx = state.ctx.live;
+  if (ctx) ctx.clearRect(0, 0, liveCanvas.width, liveCanvas.height);
   const btn = document.getElementById("startLiveMode");
   btn.textContent = "▶ Jouer";
-  btn.onclick = function () { startLiveMode().catch(onModelError); };
+  btn.onclick = function () { startLiveMode().catch(onError); };
 }
 
 async function startGuessMode() {
-  setStatus(false, "Chargement...");
   await ensureLoop();
   if (!state.photos.length) throw new Error("Aucune photo trouvée.");
   buildGuessQueue();
   state.guess.running = true;
   state.guess.levelIndex = 0;
   state.guess.results = [];
+  state.guess.holdStart = null;
   renderGuessProgress();
   setGuessTarget(state.guess.queue[0]);
   showSuccess("guess", false);
@@ -319,13 +285,30 @@ async function startGuessMode() {
 
 function stopGuessMode() {
   state.guess.running = false;
+  state.guess.target = null;
+  state.guess.holdStart = null;
+  const ctx = state.ctx.guess;
+  if (ctx) ctx.clearRect(0, 0, guessCanvas.width, guessCanvas.height);
   const btn = document.getElementById("startGuessMode");
   btn.textContent = "▶ Jouer";
-  btn.onclick = function () { startGuessMode().catch(onModelError); };
+  btn.onclick = function () { startGuessMode().catch(onError); };
 }
 
-function onModelError() {
-  setStatus(false, "Échec du modèle");
+function resetGuessMode() {
+  if (!state.loopStarted) return;
+  state.guess.running = false;
+  state.guess.holdStart = null;
+  state.guess.levelIndex = 0;
+  state.guess.results = [];
+  buildGuessQueue();
+  renderGuessProgress();
+  setGuessTarget(state.guess.queue[0]);
+  showSuccess("guess", false);
+  state.guess.running = true;
+}
+
+function onError(err) {
+  console.error(err);
   alert("Impossible de charger le modèle Teachable Machine.");
 }
 
@@ -338,16 +321,16 @@ function switchScreen(screenId) {
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
-document.querySelectorAll(".mode-tab").forEach(function (button) {
-  button.addEventListener("click", function () { switchScreen(button.dataset.screen); });
+document.querySelectorAll(".mode-tab").forEach(function (btn) {
+  btn.addEventListener("click", function () { switchScreen(btn.dataset.screen); });
 });
 
 document.getElementById("startLiveMode").addEventListener("click", function () {
-  startLiveMode().catch(onModelError);
+  startLiveMode().catch(onError);
 });
 
 document.getElementById("startGuessMode").addEventListener("click", function () {
-  startGuessMode().catch(onModelError);
+  startGuessMode().catch(onError);
 });
 
 document.getElementById("skipGuessLevel").addEventListener("click", function () {
@@ -355,18 +338,7 @@ document.getElementById("skipGuessLevel").addEventListener("click", function () 
   completeGuessLevel("skipped");
 });
 
-document.getElementById("resetGuessMode").addEventListener("click", function () {
-  if (!state.loopStarted) return;
-  state.guess.running = false;
-  state.guess.holdStart = null;
-  state.guess.levelIndex = 0;
-  state.guess.results = [];
-  buildGuessQueue();
-  renderGuessProgress();
-  setGuessTarget(state.guess.queue[0]);
-  showSuccess("guess", false);
-  state.guess.running = true;
-});
+document.getElementById("resetGuessMode").addEventListener("click", resetGuessMode);
 
 document.getElementById("liveTargetImage").style.display = "none";
 document.getElementById("guessTargetImage").style.display = "none";
