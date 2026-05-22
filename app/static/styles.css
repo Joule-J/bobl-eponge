@@ -87,6 +87,13 @@ body {
   text-shadow: 3px 3px 0 rgba(32, 20, 7, 0.18);
 }
 
+.topbar-version {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-left: 0.4em;
+  vertical-align: super;
+}
+
 .topbar-user {
   justify-self: end;
   font-size: 1rem;
