@@ -13,9 +13,10 @@
     <div class="app-body">
       <div class="topbar">
 
-        <!-- LEFT: mode tabs (dynamic per category) -->
+        <!-- LEFT: mode tabs (dynamic per category) + mix -->
         <nav class="topbar-modes" id="topbarModes">
           <!-- filled by JS -->
+          <button class="mode-tab mode-tab-mix" id="mixModeTab" data-screen="mixScreen" data-i18n="tab_mix">Mix</button>
         </nav>
 
         <!-- CENTER: brand -->
@@ -244,6 +245,53 @@
 
             <div class="video-wrap">
               <canvas id="statueGuessCanvas" class="pose-canvas"></canvas>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ══════════════════════════════════════════
+             MIX MODE (Spongebob + Statues)
+        ══════════════════════════════════════════ -->
+        <section id="mixScreen" class="screen" data-category="mix">
+
+          <div class="stage">
+            <div class="stage-header">
+              <div class="stage-meta">
+                <span class="stage-eyebrow" data-i18n="objective">Objectif</span>
+                <span class="stage-title" id="mixLevelTitle" data-i18n="level_n">Niveau 1</span>
+              </div>
+              <div class="level-indicator">
+                <div class="guess-progress" id="mixProgress"></div>
+                <button class="btn btn-secondary" id="skipMixLevel" data-i18n="btn_skip">Pas</button>
+                <button class="btn btn-primary btn-start" id="startMixMode" data-i18n="btn_play">▶ Jouer</button>
+              </div>
+            </div>
+
+            <div class="meme-wrap">
+              <img id="mixTargetImage" alt="" />
+              <div class="meme-placeholder" id="mixPlaceholder">
+                <span class="ph-icon">◻</span>
+                <p data-i18n="guess_placeholder">Jouer — l'objectif apparaît</p>
+              </div>
+              <div class="meme-label-bar" id="mixLabelBar" style="display:none">
+                <span class="meme-name" id="mixMemeLabel">—</span>
+                <span class="meme-tag mix-source-tag" id="mixSourceTag">—</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="stage">
+            <div class="stage-header">
+              <div class="stage-meta">
+                <span class="stage-eyebrow" data-i18n="camera">Caméra</span>
+                <span class="stage-title" data-i18n="hold_pose">Tiens la pose, passe le niveau</span>
+              </div>
+              <div id="mixSuccessBadge" class="badge badge-success hidden" data-i18n="next">✓ Suivant</div>
+            </div>
+
+            <div class="video-wrap">
+              <canvas id="mixCanvas" class="pose-canvas"></canvas>
             </div>
           </div>
 

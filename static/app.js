@@ -5,6 +5,7 @@ const TRANSLATIONS = {
     cat_statues:      "Statues",
     tab_live:         "Image Live",
     tab_levels:       "Mode Niveaux",
+    tab_mix:          "Mix",
     camera:           "Caméra",
     take_pose:        "Prends la pose",
     btn_play:         "▶ Jouer",
@@ -33,6 +34,7 @@ const TRANSLATIONS = {
     cat_statues:      "Statues",
     tab_live:         "Live Image",
     tab_levels:       "Level Mode",
+    tab_mix:          "Mix",
     camera:           "Camera",
     take_pose:        "Strike a pose",
     btn_play:         "▶ Play",
@@ -122,6 +124,16 @@ const guessState = {
   statues:   { running: false, levelIndex: 0, target: null, queue: [], results: [], holdFrames: 0 },
 };
 
+// Mix mode state — each queue item is { label, cat }
+const mixState = {
+  running: false,
+  levelIndex: 0,
+  target: null,   // { label, cat }
+  queue: [],
+  results: [],
+  holdFrames: 0,
+};
+
 // ── Utility ───────────────────────────────────────────────────────────────────
 function shuffled(arr) {
   const a = arr.slice();
@@ -138,7 +150,9 @@ function el(id) { return document.getElementById(id); }
 function renderTabs() {
   const cat = CATEGORIES[activeCategory];
   const modesEl = el("topbarModes");
-  modesEl.innerHTML = "";
+
+  // Remove only the dynamic tabs (not the persistent mix button)
+  modesEl.querySelectorAll(".mode-tab:not(.mode-tab-mix)").forEach(b => b.remove());
 
   [
     { key: cat.liveTabKey,  screen: cat.liveScreen  },
@@ -149,8 +163,13 @@ function renderTabs() {
     btn.textContent = t(key);
     btn.dataset.screen = screen;
     btn.addEventListener("click", () => switchScreen(screen));
-    modesEl.appendChild(btn);
+    modesEl.insertBefore(btn, el("mixModeTab"));
   });
+
+  // Update mix tab active state and label
+  const mixTab = el("mixModeTab");
+  mixTab.textContent = t("tab_mix");
+  mixTab.classList.toggle("active", activeScreenId === "mixScreen");
 }
 
 // ── Screen switch ─────────────────────────────────────────────────────────────
@@ -327,6 +346,14 @@ async function predict(cat) {
     handleLiveMode(cat, matched, topLabel, topProb);
     handleGuessMode(cat, predictions);
   }
+
+  // Mix mode: draw from whichever model matches current target's category
+  if (mixState.running && mixState.target && mixState.target.cat === cat) {
+    drawToCanvas(cat, "mixCanvas");
+    handleMixMode(cat, predictions);
+  } else if (!mixState.running && activeScreenId === "mixScreen") {
+    drawToCanvas(cat, "mixCanvas");
+  }
 }
 
 // ── Live mode ─────────────────────────────────────────────────────────────────
@@ -396,6 +423,102 @@ function completeGuessLevel(cat, result) {
     showSuccess(badgeId, false);
     advanceGuessLevel(cat);
   }, result === "correct" ? 900 : 150);
+}
+
+// ── Mix mode ──────────────────────────────────────────────────────────────────
+function handleMixMode(cat, predictions) {
+  if (!mixState.running || !mixState.target) return;
+  if (mixState.target.cat !== cat) return;
+  const match       = predictions.find(p => p.className === mixState.target.label);
+  const probability = match ? match.probability : 0;
+  const matched     = probability >= MATCH_THRESHOLD;
+  mixState.holdFrames = matched ? mixState.holdFrames + 1 : 0;
+  if (mixState.holdFrames >= HOLD_FRAMES) completeMixLevel("correct");
+}
+
+function setMixTarget(item) {
+  mixState.target     = item;
+  mixState.holdFrames = 0;
+  const cfg = CATEGORIES[item.cat];
+  el("mixTargetImage").src          = cfg.photoPath(item.label);
+  el("mixTargetImage").style.display = "block";
+  el("mixPlaceholder").style.display = "none";
+  el("mixLabelBar").style.display    = "flex";
+  el("mixMemeLabel").textContent     = item.label.replace(/_/g, " ");
+  el("mixSourceTag").textContent     = item.cat === "spongebob" ? "Bob L'éponge" : t("cat_statues");
+  el("mixLevelTitle").textContent    = t("level_n").replace("1", mixState.levelIndex + 1);
+}
+
+function advanceMixLevel() {
+  mixState.levelIndex += 1;
+  if (mixState.levelIndex >= mixState.queue.length) {
+    mixState.running = false;
+    mixState.target  = null;
+    showMixResultsPopup();
+    return;
+  }
+  setMixTarget(mixState.queue[mixState.levelIndex]);
+  mixState.running = true;
+}
+
+function completeMixLevel(result) {
+  mixState.running = false;
+  mixState.results[mixState.levelIndex] = result;
+  renderProgress("mixProgress", mixState.results, mixState.queue.length);
+  if (result === "correct") showSuccess("mixSuccessBadge", true);
+  setTimeout(function () {
+    showSuccess("mixSuccessBadge", false);
+    advanceMixLevel();
+  }, result === "correct" ? 900 : 150);
+}
+
+function showMixResultsPopup() {
+  const correct = mixState.results.filter(r => r === "correct").length;
+  el("resultsScore").textContent = correct;
+  el("resultsTotal").textContent = "/" + mixState.queue.length;
+  el("resultsDots").innerHTML    = mixState.results.map(r =>
+    '<span class="guess-progress-dot is-' + r + '"></span>'
+  ).join("");
+  el("resultsPopup").classList.remove("hidden");
+  el("resultsPopup").dataset.cat = "mix";
+}
+
+async function startMixMode() {
+  // Ensure both models are loaded
+  const sbLabels  = CATEGORIES.spongebob.labels.map(l => ({ label: l, cat: "spongebob" }));
+  const stLabels  = CATEGORIES.statues.labels.length > 0
+    ? CATEGORIES.statues.labels.map(l => ({ label: l, cat: "statues" }))
+    : [];
+
+  // Always load spongebob; try statues if model url is set
+  await ensureLoop("spongebob");
+  if (CATEGORIES.statues.modelUrl && stLabels.length === 0) {
+    try { await ensureLoop("statues"); } catch (_) {}
+  }
+
+  const allItems = shuffled([...sbLabels, ...stLabels]);
+  const total    = Math.min(GUESS_LEVEL_COUNT, allItems.length);
+
+  mixState.queue      = allItems.slice(0, total);
+  mixState.running    = true;
+  mixState.levelIndex = 0;
+  mixState.results    = [];
+  mixState.holdFrames = 0;
+
+  renderProgress("mixProgress", mixState.results, total);
+  setMixTarget(mixState.queue[0]);
+  showSuccess("mixSuccessBadge", false);
+
+  const btn = el("startMixMode");
+  btn.textContent = t("btn_stop");
+  btn.onclick = stopMixMode;
+}
+
+function stopMixMode() {
+  mixState.running = false;
+  const btn = el("startMixMode");
+  btn.textContent = t("btn_play");
+  btn.onclick = () => startMixMode().catch(onModelError);
 }
 
 // ── Start / stop live ─────────────────────────────────────────────────────────
@@ -501,6 +624,15 @@ setupDropdown("langBtn", "langMenu", item => {
   el("skipStatueLevel").textContent = t("btn_skip");
 });
 
+// Mix mode tab button
+el("mixModeTab").addEventListener("click", () => switchScreen("mixScreen"));
+
+// Mix mode buttons
+el("startMixMode").addEventListener("click", () => startMixMode().catch(onModelError));
+el("skipMixLevel").addEventListener("click", () => {
+  if (mixState.running && mixState.target) completeMixLevel("skipped");
+});
+
 // Spongebob buttons
 el("startLiveMode").addEventListener("click",  () => startLive("spongebob").catch(onModelError));
 el("startGuessMode").addEventListener("click", () => startGuess("spongebob").catch(onModelError));
@@ -519,7 +651,11 @@ el("skipStatueLevel").addEventListener("click", () => {
 el("resultsRestart").addEventListener("click", function () {
   const cat = el("resultsPopup").dataset.cat || "spongebob";
   hideResultsPopup();
-  startGuess(cat).catch(onModelError);
+  if (cat === "mix") {
+    startMixMode().catch(onModelError);
+  } else {
+    startGuess(cat).catch(onModelError);
+  }
 });
 
 // Initial setup
