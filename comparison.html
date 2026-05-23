@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Poz Yarışması</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Bangers&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="static/styles.css" />
+  <style>
+    html, body { height: auto !important; overflow-y: auto !important; }
+
+    .comp-lobby {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 40px 24px 60px;
+      background:
+        linear-gradient(rgba(249,237,91,0.18), rgba(249,237,91,0.18)),
+        url("/static/squarepants.jpg") center/cover no-repeat fixed;
+    }
+
+    .comp-brand {
+      font-family: "Bangers", sans-serif;
+      font-size: 2.6rem;
+      letter-spacing: 0.1em;
+      color: var(--blue);
+      text-shadow: 3px 3px 0 rgba(32,20,7,0.15);
+      text-align: center;
+    }
+
+    .comp-card {
+      background: rgba(249,237,91,0.94);
+      border: 4px solid rgba(32,20,7,0.14);
+      box-shadow: 8px 8px 0 rgba(32,20,7,0.12);
+      padding: 28px 32px;
+      width: 100%;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-sizing: border-box;
+    }
+
+    .comp-card-title {
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: var(--ink);
+    }
+
+    .comp-label {
+      font-size: 0.7rem;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(32,20,7,0.55);
+      margin-bottom: 4px;
+    }
+
+    .comp-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 3px solid rgba(32,20,7,0.18);
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      background: #fff;
+      box-sizing: border-box;
+    }
+
+    .comp-or {
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: rgba(32,20,7,0.4);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .comp-error {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #e53636;
+    }
+
+    /* ── Waiting room ── */
+    .comp-waiting {
+      background: rgba(249,237,91,0.94);
+      border: 4px solid rgba(32,20,7,0.14);
+      box-shadow: 8px 8px 0 rgba(32,20,7,0.12);
+      padding: 40px 36px;
+      max-width: 380px;
+      width: 100%;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      box-sizing: border-box;
+    }
+
+    .comp-wait-icon { font-size: 3rem; }
+    .comp-wait-title { font-size: 1.3rem; font-weight: 900; }
+    .comp-wait-code {
+      font-family: "Bangers", sans-serif;
+      font-size: 3rem;
+      letter-spacing: 0.18em;
+      color: var(--blue);
+    }
+    .comp-wait-players {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .comp-player-chip {
+      background: rgba(32,20,7,0.08);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      font-weight: 800;
+    }
+    .comp-player-chip.ready { background: #2eaa6e; color: #fff; }
+
+    /* ── Game screen ── */
+    .comp-game {
+      display: none;
+      width: 100%;
+      height: 100vh;
+      display: none;
+      flex-direction: column;
+    }
+
+    .comp-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      background: var(--panel-yellow);
+      border-bottom: 3px solid rgba(32,20,7,0.12);
+      flex-shrink: 0;
+      gap: 12px;
+    }
+
+    .comp-topbar-title {
+      font-family: "Bangers", sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 0.08em;
+    }
+
+    .comp-arena {
+      display: grid;
+      grid-template-columns: 1fr 320px 1fr;
+      gap: 0;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .comp-player-panel {
+      display: flex;
+      flex-direction: column;
+      background: var(--panel-yellow);
+      border-right: 3px solid rgba(32,20,7,0.10);
+      overflow: hidden;
+    }
+
+    .comp-player-panel.right-panel {
+      border-right: none;
+      border-left: 3px solid rgba(32,20,7,0.10);
+    }
+
+    .comp-panel-header {
+      padding: 10px 14px;
+      border-bottom: 2px solid rgba(32,20,7,0.10);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .comp-panel-name {
+      font-size: 0.85rem;
+      font-weight: 900;
+    }
+
+    .comp-panel-level {
+      font-family: "Bangers", sans-serif;
+      font-size: 1.1rem;
+      letter-spacing: 0.06em;
+      color: var(--blue);
+    }
+
+    .comp-camera-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .comp-canvas {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .comp-success-badge {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #2eaa6e;
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 900;
+      padding: 6px 16px;
+      border-radius: 20px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .comp-success-badge.show { opacity: 1; }
+
+    .comp-hints {
+      padding: 8px 12px;
+      min-height: 36px;
+      flex-shrink: 0;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      background: rgba(32,20,7,0.04);
+      border-top: 2px solid rgba(32,20,7,0.08);
+    }
+
+    /* ── Center column ── */
+    .comp-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px 12px;
+      background: var(--panel-yellow);
+      border-left: 3px solid rgba(32,20,7,0.10);
+      border-right: 3px solid rgba(32,20,7,0.10);
+    }
+
+    .comp-target-img {
+      width: 100%;
+      max-width: 280px;
+      aspect-ratio: 1/1;
+      object-fit: contain;
+      border-radius: 10px;
+      border: 3px solid rgba(32,20,7,0.12);
+      background: rgba(32,20,7,0.04);
+    }
+
+    .comp-level-badge {
+      font-family: "Bangers", sans-serif;
+      font-size: 1.3rem;
+      letter-spacing: 0.08em;
+      color: var(--ink);
+    }
+
+    .comp-progress-track {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 100%;
+    }
+
+    .comp-progress-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+
+    .comp-progress-name {
+      width: 60px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: rgba(32,20,7,0.6);
+    }
+
+    .comp-progress-bar-wrap {
+      flex: 1;
+      height: 8px;
+      background: rgba(32,20,7,0.10);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .comp-progress-bar {
+      height: 100%;
+      background: var(--blue);
+      border-radius: 4px;
+      transition: width 0.4s;
+    }
+
+    .comp-progress-bar.me { background: #2eaa6e; }
+
+    .comp-progress-num {
+      width: 24px;
+      text-align: right;
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: var(--ink);
+    }
+
+    /* ── Opponent camera (remote frame) ── */
+    .comp-remote-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* ── Finished ── */
+    .comp-finished {
+      display: none;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 20px;
+      padding: 40px 24px;
+      background:
+        linear-gradient(rgba(249,237,91,0.18), rgba(249,237,91,0.18)),
+        url("/static/squarepants.jpg") center/cover no-repeat fixed;
+    }
+
+    .comp-finished-card {
+      background: rgba(249,237,91,0.94);
+      border: 4px solid rgba(32,20,7,0.14);
+      box-shadow: 8px 8px 0 rgba(32,20,7,0.12);
+      padding: 40px 36px;
+      max-width: 380px;
+      width: 100%;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      box-sizing: border-box;
+    }
+
+    .comp-finished-icon { font-size: 3rem; }
+    .comp-finished-title { font-size: 1.6rem; font-weight: 900; }
+    .comp-finished-winner {
+      font-family: "Bangers", sans-serif;
+      font-size: 2.2rem;
+      letter-spacing: 0.08em;
+      color: var(--blue);
+    }
+    .comp-finished-times {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+    }
+    .comp-finished-time-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      font-weight: 700;
+      padding: 6px 10px;
+      background: rgba(32,20,7,0.06);
+      border-radius: 6px;
+    }
+
+    @media (max-width: 700px) {
+      .comp-arena { grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
+      .comp-player-panel { max-height: 40vh; }
+      .comp-center { padding: 10px; }
+      .comp-target-img { max-width: 160px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── LOBBY ── -->
+<div id="lobbyScreen" class="comp-lobby">
+  <div class="comp-brand">⚡ Poz Yarışması</div>
+
+  <div class="comp-card" id="createCard">
+    <div class="comp-card-title">Oda oluştur</div>
+    <div>
+      <div class="comp-label">Adın</div>
+      <input class="comp-input" id="createName" type="text" maxlength="16" placeholder="Örn: Ali" autocomplete="off" />
+    </div>
+    <button class="btn btn-primary btn-lobby" id="createBtn">Oda Oluştur</button>
+  </div>
+
+  <div class="comp-or">veya</div>
+
+  <div class="comp-card">
+    <div class="comp-card-title">Odaya katıl</div>
+    <div>
+      <div class="comp-label">Adın</div>
+      <input class="comp-input" id="joinName" type="text" maxlength="16" placeholder="Örn: Ayşe" autocomplete="off" />
+    </div>
+    <div>
+      <div class="comp-label">Oda Kodu</div>
+      <input class="comp-input" id="joinCode" type="text" maxlength="6" placeholder="Örn: XK7F2M" autocomplete="off" />
+    </div>
+    <button class="btn btn-primary btn-lobby" id="joinBtn">Katıl</button>
+    <div class="comp-error" id="joinError" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ── WAITING ── -->
+<div id="waitingScreen" style="display:none" class="comp-lobby">
+  <div class="comp-waiting">
+    <div class="comp-wait-icon">⏳</div>
+    <div class="comp-wait-title">Rakip bekleniyor…</div>
+    <div style="font-size:0.85rem;color:rgba(32,20,7,0.55)">Oda kodu:</div>
+    <div class="comp-wait-code" id="waitCode">—</div>
+    <div class="comp-wait-players" id="waitPlayers"></div>
+    <a href="index.html" class="btn btn-secondary" style="margin-top:8px;font-size:0.8rem">← Geri dön</a>
+  </div>
+</div>
+
+<!-- ── GAME ── -->
+<div id="gameScreen" style="display:none;flex-direction:column;height:100vh;">
+
+  <div class="comp-topbar">
+    <span class="comp-topbar-title">⚡ Poz Yarışması</span>
+    <span id="topRoomCode" style="font-size:0.75rem;font-weight:700;opacity:0.5"></span>
+    <a href="index.html" class="btn btn-secondary" id="exitGameBtn" style="font-size:0.75rem;padding:5px 12px">✕ Çıkış</a>
+  </div>
+
+  <div class="comp-arena">
+
+    <!-- LEFT: me -->
+    <div class="comp-player-panel" id="myPanel">
+      <div class="comp-panel-header">
+        <span class="comp-panel-name" id="myName">—</span>
+        <span class="comp-panel-level" id="myLevelBadge">1 / 10</span>
+      </div>
+      <div class="comp-camera-wrap">
+        <canvas id="myCanvas" class="comp-canvas"></canvas>
+        <div class="comp-success-badge" id="mySuccessBadge">✓ Geçildi!</div>
+      </div>
+      <div class="comp-hints" id="myHints"></div>
+    </div>
+
+    <!-- CENTER: target image + progress -->
+    <div class="comp-center">
+      <div class="comp-level-badge" id="centerLevel">Seviye 1</div>
+      <img class="comp-target-img" id="targetImg" src="" alt="" />
+      <div class="comp-progress-track" id="progressTrack"></div>
+    </div>
+
+    <!-- RIGHT: opponent -->
+    <div class="comp-player-panel right-panel" id="oppPanel">
+      <div class="comp-panel-header">
+        <span class="comp-panel-name" id="oppName">—</span>
+        <span class="comp-panel-level" id="oppLevelBadge">1 / 10</span>
+      </div>
+      <div class="comp-camera-wrap">
+        <img id="oppCanvas" class="comp-remote-img" src="" alt="" style="background:#111" />
+      </div>
+      <div class="comp-hints" id="oppHints" style="min-height:36px"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── FINISHED ── -->
+<div id="finishedScreen" class="comp-finished">
+  <div class="comp-finished-card">
+    <div class="comp-finished-icon" id="finIcon">🏆</div>
+    <div class="comp-finished-title" id="finTitle">Oyun Bitti!</div>
+    <div class="comp-finished-winner" id="finWinner"></div>
+    <div class="comp-finished-times" id="finTimes"></div>
+    <a href="comparison.html" class="btn btn-primary" style="margin-top:8px">↺ Yeniden Oyna</a>
+    <a href="index.html" class="btn btn-secondary" style="font-size:0.8rem">← Ana Menü</a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/pose@0.8/dist/teachablemachine-pose.min.js"></script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+import { getDatabase, ref, set, get, update, onValue, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCx6NrESFkyL87PrdrVPxOp0OcsBlxF9ys",
+  authDomain: "pose-tabu.firebaseapp.com",
+  databaseURL: "https://pose-tabu-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "pose-tabu",
+  storageBucket: "pose-tabu.firebasestorage.app",
+  messagingSenderId: "785802091003",
+  appId: "1:785802091003:web:8787bfb0f85583f4cf935e",
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db    = getDatabase(fbApp);
+
+// ── Config ────────────────────────────────────────────────────────────────────
+const MODEL_URL      = "https://teachablemachine.withgoogle.com/models/nlN9VfXC7/";
+const LABELS         = ["angry","bıkmış","boring","magara_adami","merhaba","ne_diyosun_be","ordek","perfect","rainbow","scream","sus"];
+const TOTAL_LEVELS   = 10;
+const MATCH_THRESHOLD = 0.75;
+const HOLD_FRAMES    = 4;
+const FRAME_INTERVAL = 800; // ms between remote frame uploads
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let myId     = sessionStorage.getItem("compPlayerId") || ("c_" + Math.random().toString(36).slice(2, 10));
+sessionStorage.setItem("compPlayerId", myId);
+
+let roomCode   = null;
+let roomRef    = null;
+let myRef      = null;
+let isHost     = false;
+let queue      = [];
+let myLevel    = 0;
+let holdFrames = 0;
+let isTransitioning = false;
+let model      = null;
+let webcam     = null;
+let loopOn     = false;
+let heartbeatTimer = null;
+let frameTimer     = null;
+
+// ── Seeded shuffle (same queue for both players) ──────────────────────────────
+function seededShuffle(arr, seed) {
+  const a = [...arr];
+  let s = seed;
+  for (let i = a.length - 1; i > 0; i--) {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    const j = Math.abs(s) % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a.slice(0, TOTAL_LEVELS);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function randomCode() { return Math.random().toString(36).slice(2, 8).toUpperCase(); }
+function photoPath(label) { return "photos/" + label + ".png"; }
+
+function show(id, displayType) {
+  ["lobbyScreen","waitingScreen","gameScreen","finishedScreen"].forEach(s => {
+    const el = document.getElementById(s);
+    el.style.display = "none";
+  });
+  document.getElementById(id).style.display = displayType || "flex";
+}
+
+// ── Lobby ─────────────────────────────────────────────────────────────────────
+document.getElementById("createBtn").addEventListener("click", async () => {
+  const name = document.getElementById("createName").value.trim();
+  if (!name) { alert("Adını gir."); return; }
+
+  const code = randomCode();
+  roomCode   = code;
+  isHost     = true;
+  roomRef    = ref(db, "comp_rooms/" + code);
+  myRef      = ref(db, "comp_rooms/" + code + "/players/" + myId);
+
+  await set(roomRef, {
+    status: "waiting",
+    seed: Math.floor(Math.random() * 1000000),
+    created_at: Date.now(),
+    last_seen: Date.now(),
+    players: { [myId]: { name, level: 0, finished_at: null } },
+  });
+
+  onDisconnect(myRef).remove();
+  startHeartbeat();
+  enterWaiting(code, name);
+});
+
+document.getElementById("joinBtn").addEventListener("click", async () => {
+  const name  = document.getElementById("joinName").value.trim();
+  const code  = document.getElementById("joinCode").value.trim().toUpperCase();
+  const errEl = document.getElementById("joinError");
+  errEl.style.display = "none";
+
+  if (!name) { errEl.textContent = "Adını gir."; errEl.style.display = "block"; return; }
+  if (code.length < 4) { errEl.textContent = "Geçersiz kod."; errEl.style.display = "block"; return; }
+
+  const snap = await get(ref(db, "comp_rooms/" + code));
+  if (!snap.exists()) { errEl.textContent = "Oda bulunamadı."; errEl.style.display = "block"; return; }
+  const room = snap.val();
+  if (room.status !== "waiting") { errEl.textContent = "Oda dolu veya oyun başladı."; errEl.style.display = "block"; return; }
+  if (room.players && Object.keys(room.players).length >= 2) { errEl.textContent = "Oda dolu."; errEl.style.display = "block"; return; }
+
+  roomCode = code;
+  isHost   = false;
+  roomRef  = ref(db, "comp_rooms/" + code);
+  myRef    = ref(db, "comp_rooms/" + code + "/players/" + myId);
+
+  await update(ref(db, "comp_rooms/" + code + "/players"), {
+    [myId]: { name, level: 0, finished_at: null }
+  });
+
+  onDisconnect(myRef).remove();
+  startHeartbeat();
+  enterWaiting(code, name);
+});
+
+document.getElementById("joinCode").addEventListener("input", e => {
+  e.target.value = e.target.value.toUpperCase();
+});
+
+// ── Waiting room ──────────────────────────────────────────────────────────────
+function enterWaiting(code, name) {
+  show("waitingScreen", "flex");
+  document.getElementById("waitCode").textContent = code;
+
+  onValue(roomRef, snap => {
+    if (!snap.exists()) {
+      show("lobbyScreen", "flex");
+      return;
+    }
+    const room    = snap.val();
+    const players = room.players || {};
+    const ids     = Object.keys(players);
+
+    // Update player chips
+    document.getElementById("waitPlayers").innerHTML = ids.map(id =>
+      `<span class="comp-player-chip${ids.length >= 1 ? " ready" : ""}">${players[id].name}</span>`
+    ).join("");
+
+    // Both players joined → start
+    if (ids.length === 2 && room.status === "waiting") {
+      if (isHost) {
+        update(roomRef, { status: "playing" });
+      }
+    }
+
+    if (room.status === "playing") {
+      startGame(room, name);
+    }
+  });
+}
+
+// ── Game start ────────────────────────────────────────────────────────────────
+async function startGame(room, myName) {
+  const players = room.players || {};
+  const ids     = Object.keys(players);
+  const oppId   = ids.find(id => id !== myId);
+  const oppName = players[oppId]?.name || "Rakip";
+
+  queue = seededShuffle(LABELS, room.seed);
+
+  document.getElementById("myName").textContent  = myName || players[myId]?.name || "Sen";
+  document.getElementById("oppName").textContent = oppName;
+  document.getElementById("topRoomCode").textContent = roomCode;
+
+  show("gameScreen", "flex");
+  document.getElementById("gameScreen").style.display = "flex";
+
+  updateMyLevel(0);
+  renderProgress(players, ids);
+
+  // Listen for room changes (opponent level, finished)
+  onValue(roomRef, snap => {
+    if (!snap.exists()) return;
+    const r = snap.val();
+    const ps = r.players || {};
+
+    renderProgress(ps, Object.keys(ps));
+    updateOppDisplay(ps[oppId]);
+
+    if (r.status === "finished") {
+      endGame(r);
+    }
+  });
+
+  // Start camera + model
+  await loadModel();
+  await startWebcam();
+  loopOn = true;
+  gameLoop(oppId);
+
+  // Upload frames periodically
+  frameTimer = setInterval(() => uploadFrame(), FRAME_INTERVAL);
+}
+
+function updateMyLevel(level) {
+  myLevel = level;
+  const label = queue[level] || "";
+  document.getElementById("targetImg").src         = photoPath(label);
+  document.getElementById("centerLevel").textContent = "Seviye " + (level + 1);
+  document.getElementById("myLevelBadge").textContent = (level + 1) + " / " + TOTAL_LEVELS;
+}
+
+function updateOppDisplay(opp) {
+  if (!opp) return;
+  const level = opp.level || 0;
+  document.getElementById("oppLevelBadge").textContent = (level + 1) + " / " + TOTAL_LEVELS;
+  if (opp.frame) {
+    document.getElementById("oppCanvas").src = opp.frame;
+  }
+  const hint = opp.hint || "";
+  document.getElementById("oppHints").innerHTML = hint
+    ? '<span class="hint-chip">' + hint + '</span>' : "";
+}
+
+function renderProgress(players, ids) {
+  const track = document.getElementById("progressTrack");
+  track.innerHTML = ids.map(id => {
+    const p     = players[id];
+    const level = p?.level || 0;
+    const pct   = Math.round((level / TOTAL_LEVELS) * 100);
+    const isMe  = id === myId;
+    return `<div class="comp-progress-row">
+      <span class="comp-progress-name">${p?.name || "?"}</span>
+      <div class="comp-progress-bar-wrap">
+        <div class="comp-progress-bar${isMe ? " me" : ""}" style="width:${pct}%"></div>
+      </div>
+      <span class="comp-progress-num">${level}/${TOTAL_LEVELS}</span>
+    </div>`;
+  }).join("");
+}
+
+// ── Model + Webcam ────────────────────────────────────────────────────────────
+async function loadModel() {
+  model = await tmPose.load(MODEL_URL + "model.json", MODEL_URL + "metadata.json");
+}
+
+async function startWebcam() {
+  webcam = new tmPose.Webcam(480, 360, true);
+  await webcam.setup();
+  await webcam.play();
+}
+
+async function gameLoop(oppId) {
+  if (!loopOn) return;
+  webcam.update();
+  await predict();
+  requestAnimationFrame(() => gameLoop(oppId));
+}
+
+async function predict() {
+  if (!model || !webcam || isTransitioning) return;
+
+  const canvas = document.getElementById("myCanvas");
+  canvas.width = 480; canvas.height = 360;
+  canvas.getContext("2d").drawImage(webcam.canvas, 0, 0);
+
+  const { posenetOutput } = await model.estimatePose(webcam.canvas);
+  const predictions = await model.predict(posenetOutput);
+  predictions.sort((a, b) => b.probability - a.probability);
+
+  const top      = predictions[0];
+  const topLabel = top?.className || "—";
+  const topProb  = top?.probability || 0;
+  const matched  = topProb >= MATCH_THRESHOLD;
+
+  const name = topLabel.replace(/_/g, " ");
+  const hint = matched
+    ? name + " — pozu koru!"
+    : "En yakın: " + name + " (" + (topProb * 100).toFixed(0) + "%)";
+
+  document.getElementById("myHints").innerHTML = '<span class="hint-chip">' + hint + "</span>";
+
+  // Write hint to Firebase for opponent to see
+  update(ref(db, "comp_rooms/" + roomCode + "/players/" + myId), { hint });
+
+  const target    = queue[myLevel];
+  const targetHit = predictions.find(p => p.className === target)?.probability >= MATCH_THRESHOLD;
+  holdFrames = targetHit ? holdFrames + 1 : 0;
+
+  const badge = document.getElementById("mySuccessBadge");
+  badge.classList.toggle("show", holdFrames >= HOLD_FRAMES);
+
+  if (holdFrames >= HOLD_FRAMES && !isTransitioning) {
+    isTransitioning = true;
+    holdFrames = 0;
+    setTimeout(() => advanceLevel(), 700);
+  }
+}
+
+async function advanceLevel() {
+  document.getElementById("mySuccessBadge").classList.remove("show");
+  const nextLevel = myLevel + 1;
+
+  if (nextLevel >= TOTAL_LEVELS) {
+    // I finished!
+    const now = Date.now();
+    await update(ref(db, "comp_rooms/" + roomCode + "/players/" + myId), {
+      level: nextLevel,
+      finished_at: now,
+    });
+    await update(roomRef, { status: "finished", winner: myId, finished_at: now });
+  } else {
+    await update(ref(db, "comp_rooms/" + roomCode + "/players/" + myId), { level: nextLevel });
+    updateMyLevel(nextLevel);
+  }
+  isTransitioning = false;
+}
+
+// ── Frame upload ──────────────────────────────────────────────────────────────
+function uploadFrame() {
+  if (!webcam) return;
+  try {
+    const tmp = document.createElement("canvas");
+    tmp.width = 160; tmp.height = 120;
+    tmp.getContext("2d").drawImage(webcam.canvas, 0, 0, 160, 120);
+    const b64 = tmp.toDataURL("image/jpeg", 0.4);
+    update(ref(db, "comp_rooms/" + roomCode + "/players/" + myId), { frame: b64 });
+  } catch(e) {}
+}
+
+// ── Heartbeat ─────────────────────────────────────────────────────────────────
+function startHeartbeat() {
+  const hb = () => { if (roomRef) update(roomRef, { last_seen: Date.now() }).catch(() => {}); };
+  hb();
+  heartbeatTimer = setInterval(hb, 20000);
+}
+
+// ── End game ──────────────────────────────────────────────────────────────────
+function endGame(room) {
+  loopOn = false;
+  if (heartbeatTimer) clearInterval(heartbeatTimer);
+  if (frameTimer)     clearInterval(frameTimer);
+
+  const players = room.players || {};
+  const ids     = Object.keys(players);
+  const winner  = room.winner;
+  const isMe    = winner === myId;
+
+  document.getElementById("finIcon").textContent    = isMe ? "🏆" : "😅";
+  document.getElementById("finTitle").textContent   = "Oyun Bitti!";
+  document.getElementById("finWinner").textContent  = (players[winner]?.name || "?") + " kazandı!";
+
+  document.getElementById("finTimes").innerHTML = ids.map(id => {
+    const p    = players[id];
+    const done = p?.finished_at;
+    const time = done
+      ? ((done - room.created_at) / 1000).toFixed(1) + "s"
+      : p?.level + "/" + TOTAL_LEVELS + " seviyede kaldı";
+    return `<div class="comp-finished-time-row"><span>${p?.name}</span><span>${time}</span></div>`;
+  }).join("");
+
+  show("finishedScreen", "flex");
+}
+
+// ── Exit ──────────────────────────────────────────────────────────────────────
+document.getElementById("exitGameBtn").addEventListener("click", async e => {
+  e.preventDefault();
+  loopOn = false;
+  if (heartbeatTimer) clearInterval(heartbeatTimer);
+  if (frameTimer)     clearInterval(frameTimer);
+  if (myRef) await remove(myRef);
+  window.location.href = "index.html";
+});
+
+</script>
+</body>
+</html>
