@@ -46,6 +46,14 @@
         </div>
 
         <div class="lobby-field">
+          <label class="lobby-label" data-i18n="label_mode">Mode de jeu</label>
+          <div class="lobby-mode-toggle">
+            <button class="lobby-mode-btn active" id="modeFree" data-mode="free" data-i18n="mode_free">🎮 Free Game</button>
+            <button class="lobby-mode-btn" id="modeTeam" data-mode="team" data-i18n="mode_team">⚔ Équipes</button>
+          </div>
+        </div>
+
+        <div class="lobby-field">
           <label class="lobby-label" data-i18n="label_levels">Nombre de poses</label>
           <select class="lobby-select" id="createLevels">
             <option value="5">5</option>
@@ -94,8 +102,19 @@
           </div>
         </div>
 
+        <!-- Free Game: single player list -->
+        <div id="freeLobbyPanel" class="hidden">
+          <div class="lobby-team" style="width:100%">
+            <div class="lobby-team-header" style="background:rgba(31,156,255,0.12)">
+              <span class="lobby-team-name" data-i18n="players_label">Joueurs</span>
+              <span class="lobby-mode-badge" data-i18n="mode_free">🎮 Free Game</span>
+            </div>
+            <ul class="lobby-player-list" id="freePlayerList"></ul>
+          </div>
+        </div>
+
         <!-- Teams -->
-        <div class="lobby-teams">
+        <div class="lobby-teams" id="teamLobbyPanel">
           <div class="lobby-team" id="teamAPanel">
             <div class="lobby-team-header team-a">
               <span class="lobby-team-name" data-i18n="team_a">Équipe A</span>
@@ -149,6 +168,7 @@
         back: "← Retour", create_title: "Créer une salle",
         create_desc: "Crée une salle et invite tes amis avec le code.",
         your_name: "Ton nom", label_category: "Catégorie",
+        label_mode: "Mode de jeu", mode_free: "🎮 Free Game", mode_team: "⚔ Équipes",
         label_levels: "Nombre de poses", btn_create: "Créer la salle",
         btn_creating: "Création…", or: "ou", join_title: "Rejoindre une salle",
         label_code: "Code de la salle", btn_join: "Rejoindre",
@@ -156,17 +176,20 @@
         err_notfound: "Salle introuvable.", err_finished: "Partie déjà terminée.",
         err_noposes: "Pas de poses pour cette catégorie.",
         room_code: "Code", team_a: "Équipe A", team_b: "Équipe B",
+        players_label: "Joueurs",
         btn_join_team: "Rejoindre", btn_ready: "✓ Prêt", btn_start: "▶ Démarrer",
         lobby_hint: "En attente que tous les joueurs soient prêts…",
         ready_count: " joueur(s) prêt(s)",
         cat_statues: "Statues", cat_spongebob: "Bob L'éponge", cat_mix: "Mix",
         need_team: "Rejoins une équipe d'abord.",
         need_players: "Il faut au moins 1 joueur par équipe.",
+        need_two_players: "Il faut au moins 2 joueurs pour démarrer.",
       },
       en: {
         back: "← Back", create_title: "Create a room",
         create_desc: "Create a room and invite friends with the code.",
         your_name: "Your name", label_category: "Category",
+        label_mode: "Game mode", mode_free: "🎮 Free Game", mode_team: "⚔ Teams",
         label_levels: "Number of poses", btn_create: "Create room",
         btn_creating: "Creating…", or: "or", join_title: "Join a room",
         label_code: "Room code", btn_join: "Join",
@@ -174,12 +197,14 @@
         err_notfound: "Room not found.", err_finished: "Game already finished.",
         err_noposes: "No poses for this category.",
         room_code: "Code", team_a: "Team A", team_b: "Team B",
+        players_label: "Players",
         btn_join_team: "Join", btn_ready: "✓ Ready", btn_start: "▶ Start",
         lobby_hint: "Waiting for all players to be ready…",
         ready_count: " player(s) ready",
         cat_statues: "Statues", cat_spongebob: "Bob L'éponge", cat_mix: "Mix",
         need_team: "Join a team first.",
         need_players: "Need at least 1 player per team.",
+        need_two_players: "Need at least 2 players to start.",
       },
     };
 
@@ -208,6 +233,15 @@
     let roomCode = null;
     let isHost = false;
     let roomRef = null;
+    let selectedMode = "free"; // "free" | "team"
+
+    // ── Mode toggle ───────────────────────────────────────────────────────────
+    document.querySelectorAll(".lobby-mode-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        selectedMode = btn.dataset.mode;
+        document.querySelectorAll(".lobby-mode-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === selectedMode));
+      });
+    });
 
     function getQueue(category, count) {
       let pool = [];
@@ -238,12 +272,13 @@
 
       await set(ref(db, "rooms/" + code), {
         category, status: "lobby",
+        game_mode: selectedMode,
         current_turn: 0, current_level: 0,
         scores: { A: 0, B: 0 },
         queue, results: [],
         host: myPlayerId,
         players: {
-          [myPlayerId]: { name, team: null, ready: false }
+          [myPlayerId]: { name, team: selectedMode === "free" ? "free" : null, ready: false }
         },
         created_at: Date.now(),
       });
@@ -268,7 +303,8 @@
       if (snap.val().status === "finished") { errEl.textContent = t("err_finished"); errEl.classList.remove("hidden"); return; }
 
       roomCode = code;
-      await update(ref(db, "rooms/" + code + "/players/" + myPlayerId), { name, team: null, ready: false });
+      const roomMode = snap.val().game_mode || "free";
+      await update(ref(db, "rooms/" + code + "/players/" + myPlayerId), { name, team: roomMode === "free" ? "free" : null, ready: false });
       enterLobby(code, name);
     });
 
@@ -298,28 +334,53 @@
         const catKey = "cat_" + room.category;
         document.getElementById("lobbyCategory").textContent = t(catKey);
 
-        const players = room.players || {};
-        const teamA = Object.entries(players).filter(([, p]) => p.team === "A");
-        const teamB = Object.entries(players).filter(([, p]) => p.team === "B");
+        const gameMode = room.game_mode || "free";
+        const players  = room.players || {};
+        const allPlayers = Object.values(players);
 
-        renderTeam("teamAList", teamA, players);
-        renderTeam("teamBList", teamB, players);
+        // Show correct panel
+        document.getElementById("freeLobbyPanel").classList.toggle("hidden", gameMode !== "free");
+        document.getElementById("teamLobbyPanel").classList.toggle("hidden", gameMode !== "team");
+
+        if (gameMode === "free") {
+          // Render single player list
+          const ul = document.getElementById("freePlayerList");
+          ul.innerHTML = allPlayers.length === 0
+            ? '<li class="lobby-player-empty">—</li>'
+            : Object.entries(players).map(([id, p]) =>
+                '<li class="lobby-player-item' + (id === myPlayerId ? " is-me" : "") + '">' +
+                '<span class="player-name">' + escHtml(p.name) + '</span>' +
+                (p.ready ? '<span class="player-ready-dot">✓</span>' : '') +
+                '</li>'
+              ).join("");
+        } else {
+          const teamA = Object.entries(players).filter(([, p]) => p.team === "A");
+          const teamB = Object.entries(players).filter(([, p]) => p.team === "B");
+          renderTeam("teamAList", teamA, players);
+          renderTeam("teamBList", teamB, players);
+          document.querySelectorAll(".lobby-join-team-btn").forEach(btn => {
+            btn.classList.toggle("active-team", btn.dataset.team === myTeam);
+          });
+        }
 
         // Ready status
-        const allPlayers = Object.values(players);
         const readyCount = allPlayers.filter(p => p.ready).length;
         document.getElementById("readyStatus").textContent = readyCount + "/" + allPlayers.length + t("ready_count");
 
-        // Host can start if all ready and both teams have players
-        const allReady = allPlayers.length > 0 && allPlayers.every(p => p.ready);
-        const teamsOk  = teamA.length > 0 && teamB.length > 0;
-        const startBtn = document.getElementById("startGameBtn");
-
+        // Start button logic
+        const allReady  = allPlayers.length > 0 && allPlayers.every(p => p.ready);
+        const startBtn  = document.getElementById("startGameBtn");
         if (isHost && room.host === myPlayerId) {
-          startBtn.classList.toggle("hidden", !(allReady && teamsOk));
+          if (gameMode === "free") {
+            startBtn.classList.toggle("hidden", !(allReady && allPlayers.length >= 2));
+          } else {
+            const teamA = Object.entries(players).filter(([, p]) => p.team === "A");
+            const teamB = Object.entries(players).filter(([, p]) => p.team === "B");
+            startBtn.classList.toggle("hidden", !(allReady && teamA.length > 0 && teamB.length > 0));
+          }
         }
 
-        // Update my ready button
+        // My ready button
         const me = players[myPlayerId];
         if (me) {
           const readyBtn = document.getElementById("readyBtn");
@@ -327,11 +388,6 @@
           readyBtn.style.opacity = me.ready ? "0.6" : "1";
           myTeam = me.team;
         }
-
-        // Join team buttons highlight
-        document.querySelectorAll(".lobby-join-team-btn").forEach(btn => {
-          btn.classList.toggle("active-team", btn.dataset.team === myTeam);
-        });
       });
     }
 
@@ -362,7 +418,9 @@
     // Ready button
     document.getElementById("readyBtn").addEventListener("click", async () => {
       if (!roomCode) return;
-      if (!myTeam) { alert(t("need_team")); return; }
+      const roomSnap = await get(ref(db, "rooms/" + roomCode));
+      const gameMode = roomSnap.val().game_mode || "free";
+      if (gameMode === "team" && !myTeam) { alert(t("need_team")); return; }
       const snap = await get(ref(db, "rooms/" + roomCode + "/players/" + myPlayerId));
       const cur  = snap.val();
       await update(ref(db, "rooms/" + roomCode + "/players/" + myPlayerId), { ready: !cur.ready });
@@ -371,28 +429,48 @@
     // Start game (host only)
     document.getElementById("startGameBtn").addEventListener("click", async () => {
       if (!roomCode) return;
-      const snap   = await get(ref(db, "rooms/" + roomCode));
-      const room   = snap.val();
+      const snap    = await get(ref(db, "rooms/" + roomCode));
+      const room    = snap.val();
       const players = room.players || {};
-      const teamA  = Object.entries(players).filter(([, p]) => p.team === "A").map(([id]) => id);
-      const teamB  = Object.entries(players).filter(([, p]) => p.team === "B").map(([id]) => id);
+      const gameMode = room.game_mode || "free";
 
-      if (teamA.length === 0 || teamB.length === 0) { alert(t("need_players")); return; }
-
-      // Build rotation: first turn = Team A announces, Team B guesses
-      const firstTurn = buildTurn(teamA, teamB, 0, {});
-
-      await update(ref(db, "rooms/" + roomCode), {
-        status: "playing",
-        current_turn: 0,
-        current_level: 0,
-        turn_history: {},
-        team_order: ["A", "B"],
-        teams: { A: teamA, B: teamB },
-        current_roles: firstTurn,
-        wrong_requests: {},
-      });
+      if (gameMode === "free") {
+        const allIds = Object.keys(players);
+        if (allIds.length < 2) { alert(t("need_two_players")); return; }
+        // In free mode: treat all players as one pool, rotate announcer/guesser
+        const firstRoles = buildFreeRoles(allIds, 0, {});
+        await update(ref(db, "rooms/" + roomCode), {
+          status: "playing",
+          current_turn: 0, current_level: 0,
+          turn_history: {},
+          teams: { free: allIds },
+          current_roles: firstRoles,
+          wrong_requests: {},
+        });
+      } else {
+        const teamA = Object.entries(players).filter(([, p]) => p.team === "A").map(([id]) => id);
+        const teamB = Object.entries(players).filter(([, p]) => p.team === "B").map(([id]) => id);
+        if (teamA.length === 0 || teamB.length === 0) { alert(t("need_players")); return; }
+        const firstTurn = buildTurn(teamA, teamB, 0, {});
+        await update(ref(db, "rooms/" + roomCode), {
+          status: "playing",
+          current_turn: 0, current_level: 0,
+          turn_history: {},
+          team_order: ["A", "B"],
+          teams: { A: teamA, B: teamB },
+          current_roles: firstTurn,
+          wrong_requests: {},
+        });
+      }
     });
+
+    // ── Free mode role builder ────────────────────────────────────────────────
+    function buildFreeRoles(allIds, turnIndex, history) {
+      const announcer = pickRotating(allIds, "announcer_free", turnIndex, history);
+      const remaining = allIds.filter(id => id !== announcer);
+      const guesser   = pickRotating(remaining.length > 0 ? remaining : allIds, "guesser_free", turnIndex, history);
+      return { announcer, guesser, announcing_team: "free", guessing_team: "free" };
+    }
 
     // ── Turn builder (exported so tabu-oyun can reuse via Firebase) ───────────
     function buildTurn(teamA, teamB, turnIndex, turnHistory) {

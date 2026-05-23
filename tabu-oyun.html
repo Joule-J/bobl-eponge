@@ -441,15 +441,20 @@
         if (level + 1 >= queue.length) {
           await update(roomRef, { status: "finished", results, scores, guesser_status: "", wrong_requests: {} });
         } else {
-          // Build next turn
           const nextLevel   = level + 1;
           const nextTurn    = (room.current_turn || 0) + 1;
           const teams       = room.teams || {};
-          const teamA       = teams.A || [];
-          const teamB       = teams.B || [];
           const turnHistory = room.turn_history || {};
-          const newRoles    = buildTurn(teamA, teamB, nextTurn, turnHistory);
           const newHistory  = { ...turnHistory, [nextTurn - 1]: roles };
+          const gameMode    = room.game_mode || "free";
+
+          let newRoles;
+          if (gameMode === "free") {
+            const allIds = teams.free || [];
+            newRoles = buildFreeRoles(allIds, nextTurn, newHistory);
+          } else {
+            newRoles = buildTurn(teams.A || [], teams.B || [], nextTurn, newHistory);
+          }
 
           await update(roomRef, {
             current_level: nextLevel,
@@ -474,6 +479,13 @@
       const announcer = pickRotating(annTeam, "announcer_" + announcingTeam, turnHistory);
       const guesser   = pickRotating(gueTeam, "guesser_"   + guessingTeam,  turnHistory);
       return { announcer, guesser, announcing_team: announcingTeam, guessing_team: guessingTeam };
+    }
+
+    function buildFreeRoles(allIds, turnIndex, history) {
+      const announcer = pickRotating(allIds, "announcer_free", history);
+      const remaining = allIds.filter(id => id !== announcer);
+      const guesser   = pickRotating(remaining.length > 0 ? remaining : allIds, "guesser_free", history);
+      return { announcer, guesser, announcing_team: "free", guessing_team: "free" };
     }
 
     function pickRotating(team, roleKey, history) {
@@ -652,8 +664,11 @@
           document.getElementById("specLevelNum").textContent   = level + 1;
           renderProgress("specProgress", results, total);
         }
-        // Show wrong button only for opponents of announcing team
-        const isOpponent = myTeam !== null && myTeam !== roles.announcing_team;
+        // Show wrong button for opponents (team mode) or everyone except announcer (free mode)
+        const gameMode  = room.game_mode || "free";
+        const isOpponent = gameMode === "free"
+          ? true
+          : (myTeam !== null && myTeam !== roles.announcing_team);
         document.getElementById("specWrongSection").style.display = isOpponent ? "flex" : "none";
       }
     });
