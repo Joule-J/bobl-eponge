@@ -240,34 +240,43 @@
     applyTranslations();
 
     // ── Open rooms live list ──────────────────────────────────────────────────
-    onValue(ref(db, "rooms"), snap => {
+    function renderOpenRooms(snap) {
       const section = document.getElementById("openRoomsSection");
       const list    = document.getElementById("openRoomsList");
-      if (!snap.exists()) { section.style.display = "none"; return; }
+      if (!snap || !snap.exists()) {
+        section.style.display = "block";
+        list.innerHTML = `<div class="open-rooms-empty">${t("open_rooms_empty")}</div>`;
+        return;
+      }
       const rooms = snap.val();
-      const open  = Object.entries(rooms).filter(([, r]) => r.status === "waiting" || r.status === "lobby");
-      if (open.length === 0) { section.style.display = "none"; return; }
+      const open  = Object.entries(rooms).filter(([, r]) =>
+        r.status === "lobby" || r.status === "waiting"
+      );
       section.style.display = "block";
+      if (open.length === 0) {
+        list.innerHTML = `<div class="open-rooms-empty">${t("open_rooms_empty")}</div>`;
+        return;
+      }
       list.innerHTML = open.map(([code, r]) => {
         const playerCount = r.players ? Object.keys(r.players).length : 0;
         const modeLabel   = r.game_mode === "team" ? t("open_room_team") : t("open_room_free");
-        const catLabel    = r.category  === "spongebob" ? t("cat_spongebob") : r.category === "statues" ? t("cat_statues") : t("cat_mix");
+        const catLabel    = r.category === "spongebob" ? t("cat_spongebob") : r.category === "statues" ? t("cat_statues") : t("cat_mix");
         return `<div class="open-room-row">
           <div class="open-room-info">
             <span class="open-room-code">${code}</span>
             <span class="open-room-meta">${catLabel} · ${modeLabel} · ${playerCount} ${t("open_room_players")}</span>
           </div>
-          <button class="btn btn-secondary open-room-join-btn" data-code="${code}" data-i18n-btn="open_room_join">${t("open_room_join")}</button>
+          <button class="btn btn-secondary open-room-join-btn" data-code="${code}">${t("open_room_join")}</button>
         </div>`;
-      }).join("") || `<div class="open-rooms-empty">${t("open_rooms_empty")}</div>`;
-
+      }).join("");
       list.querySelectorAll(".open-room-join-btn").forEach(btn => {
         btn.addEventListener("click", () => {
           document.getElementById("joinCode").value = btn.dataset.code;
           document.getElementById("joinName").focus();
         });
       });
-    });
+    }
+    onValue(ref(db, "rooms"), renderOpenRooms);
 
     // ── State ─────────────────────────────────────────────────────────────────
     const LABELS = {
