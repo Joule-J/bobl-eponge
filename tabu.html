@@ -17,61 +17,118 @@
       <span class="lobby-title">Pose Tabu</span>
       <div style="display:flex;align-items:center;gap:12px">
         <a class="lobby-back" href="index.html" data-i18n="back">← Retour</a>
-        <!-- Language toggle -->
         <div class="lobby-lang-toggle">
-          <button class="lang-pill active" data-lang="fr">FR</button>
+          <button class="lang-pill" data-lang="fr">FR</button>
           <button class="lang-pill" data-lang="en">EN</button>
         </div>
       </div>
     </div>
 
-    <!-- CREATE ROOM -->
-    <div class="lobby-card" id="createCard">
-      <div class="lobby-card-title" data-i18n="create_title">Créer une salle</div>
-      <div class="lobby-card-desc" data-i18n="create_desc">Tu seras l'<strong>Annonciateur</strong> — tu vois la pose, l'autre doit la deviner.</div>
+    <!-- STEP 1: Create or Join -->
+    <div id="stepEntry">
 
-      <div class="lobby-field">
-        <label class="lobby-label" data-i18n="label_category">Catégorie</label>
-        <select class="lobby-select" id="createCategory">
-          <option value="spongebob">Bob L'éponge</option>
-          <option value="statues" data-i18n-opt="cat_statues">Statues</option>
-          <option value="mix">Mix</option>
-        </select>
+      <div class="lobby-card">
+        <div class="lobby-card-title" data-i18n="create_title">Créer une salle</div>
+        <div class="lobby-card-desc" data-i18n="create_desc">Crée une salle et invite tes amis avec le code.</div>
+
+        <div class="lobby-field">
+          <label class="lobby-label" data-i18n="your_name">Ton nom</label>
+          <input class="lobby-input" id="createName" type="text" maxlength="16" placeholder="Ex: Alice" autocomplete="off" />
+        </div>
+
+        <div class="lobby-field">
+          <label class="lobby-label" data-i18n="label_category">Catégorie</label>
+          <select class="lobby-select" id="createCategory">
+            <option value="spongebob">Bob L'éponge</option>
+            <option value="statues" data-i18n-opt="cat_statues">Statues</option>
+            <option value="mix">Mix</option>
+          </select>
+        </div>
+
+        <div class="lobby-field">
+          <label class="lobby-label" data-i18n="label_levels">Nombre de poses</label>
+          <select class="lobby-select" id="createLevels">
+            <option value="5">5</option>
+            <option value="10" selected>10</option>
+            <option value="15">15</option>
+            <option value="20">20</option>
+          </select>
+        </div>
+
+        <button class="btn btn-primary btn-lobby" id="createBtn" data-i18n="btn_create">Créer la salle</button>
       </div>
 
-      <div class="lobby-field">
-        <label class="lobby-label" data-i18n="label_levels">Nombre de niveaux</label>
-        <select class="lobby-select" id="createLevels">
-          <option value="5">5</option>
-          <option value="10" selected>10</option>
-          <option value="15">15</option>
-        </select>
+      <div class="lobby-or" data-i18n="or">ou</div>
+
+      <div class="lobby-card">
+        <div class="lobby-card-title" data-i18n="join_title">Rejoindre une salle</div>
+
+        <div class="lobby-field">
+          <label class="lobby-label" data-i18n="your_name">Ton nom</label>
+          <input class="lobby-input" id="joinName" type="text" maxlength="16" placeholder="Ex: Bob" autocomplete="off" />
+        </div>
+
+        <div class="lobby-field">
+          <label class="lobby-label" data-i18n="label_code">Code de la salle</label>
+          <input class="lobby-input" id="joinCode" type="text" maxlength="6" placeholder="Ex: XK7F2M" autocomplete="off" />
+        </div>
+
+        <button class="btn btn-primary btn-lobby" id="joinBtn" data-i18n="btn_join">Rejoindre</button>
+        <div class="lobby-error hidden" id="joinError"></div>
       </div>
 
-      <button class="btn btn-primary btn-lobby" id="createBtn" data-i18n="btn_create">Créer la salle</button>
     </div>
 
-    <div class="lobby-or" data-i18n="or">ou</div>
+    <!-- STEP 2: Team lobby (shown after joining) -->
+    <div id="stepLobby" class="hidden">
 
-    <!-- JOIN ROOM -->
-    <div class="lobby-card" id="joinCard">
-      <div class="lobby-card-title" data-i18n="join_title">Rejoindre une salle</div>
-      <div class="lobby-card-desc" data-i18n="join_desc">Tu seras le <strong>Devineur</strong> — fais la pose avec ta caméra.</div>
+      <div class="lobby-waiting-room">
 
-      <div class="lobby-field">
-        <label class="lobby-label" data-i18n="label_code">Code de la salle</label>
-        <input class="lobby-input" id="joinCode" type="text" maxlength="6" placeholder="Ex: XK7F2M" autocomplete="off" />
+        <div class="lobby-room-header">
+          <div class="lobby-room-code-wrap">
+            <span class="lobby-room-code-label" data-i18n="room_code">Code</span>
+            <span class="lobby-room-code-big" id="lobbyCode">—</span>
+          </div>
+          <div class="lobby-room-info">
+            <span id="lobbyCategory" class="lobby-cat-badge">—</span>
+          </div>
+        </div>
+
+        <!-- Teams -->
+        <div class="lobby-teams">
+          <div class="lobby-team" id="teamAPanel">
+            <div class="lobby-team-header team-a">
+              <span class="lobby-team-name" data-i18n="team_a">Équipe A</span>
+              <button class="btn btn-secondary lobby-join-team-btn" id="joinTeamA" data-team="A" data-i18n="btn_join_team">Rejoindre</button>
+            </div>
+            <ul class="lobby-player-list" id="teamAList"></ul>
+          </div>
+
+          <div class="lobby-team" id="teamBPanel">
+            <div class="lobby-team-header team-b">
+              <span class="lobby-team-name" data-i18n="team_b">Équipe B</span>
+              <button class="btn btn-secondary lobby-join-team-btn" id="joinTeamB" data-team="B" data-i18n="btn_join_team">Rejoindre</button>
+            </div>
+            <ul class="lobby-player-list" id="teamBList"></ul>
+          </div>
+        </div>
+
+        <div class="lobby-actions">
+          <div class="lobby-ready-status" id="readyStatus"></div>
+          <button class="btn btn-primary btn-lobby" id="readyBtn" data-i18n="btn_ready">✓ Prêt</button>
+          <button class="btn btn-primary btn-lobby hidden" id="startGameBtn" data-i18n="btn_start">▶ Démarrer</button>
+        </div>
+
+        <div class="lobby-hint" data-i18n="lobby_hint">En attente que tous les joueurs soient prêts…</div>
+
       </div>
-
-      <button class="btn btn-primary btn-lobby" id="joinBtn" data-i18n="btn_join">Rejoindre</button>
-      <div class="lobby-error hidden" id="joinError"></div>
     </div>
 
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
-    import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+    import { getDatabase, ref, set, get, update, onValue, child, push } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCx6NrESFkyL87PrdrVPxOp0OcsBlxF9ys",
@@ -86,156 +143,284 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    // ── i18n ─────────────────────────────────────────────────────────────────
+    // ── i18n ──────────────────────────────────────────────────────────────────
     const T = {
       fr: {
-        back:          "← Retour",
-        create_title:  "Créer une salle",
-        create_desc:   "Tu seras l'<strong>Annonciateur</strong> — tu vois la pose, l'autre doit la deviner.",
-        label_category:"Catégorie",
-        label_levels:  "Nombre de niveaux",
-        btn_create:    "Créer la salle",
-        btn_creating:  "Création…",
-        or:            "ou",
-        join_title:    "Rejoindre une salle",
-        join_desc:     "Tu seras le <strong>Devineur</strong> — fais la pose avec ta caméra.",
-        label_code:    "Code de la salle",
-        btn_join:      "Rejoindre",
-        err_code:      "Entrez un code valide.",
-        err_notfound:  "Salle introuvable.",
-        err_finished:  "Cette salle est terminée.",
-        err_noposes:   "Cette catégorie n'a pas encore de poses. Choisissez Bob L'éponge ou Mix.",
-        cat_statues:   "Statues",
+        back: "← Retour", create_title: "Créer une salle",
+        create_desc: "Crée une salle et invite tes amis avec le code.",
+        your_name: "Ton nom", label_category: "Catégorie",
+        label_levels: "Nombre de poses", btn_create: "Créer la salle",
+        btn_creating: "Création…", or: "ou", join_title: "Rejoindre une salle",
+        label_code: "Code de la salle", btn_join: "Rejoindre",
+        err_name: "Entre ton prénom.", err_code: "Code invalide.",
+        err_notfound: "Salle introuvable.", err_finished: "Partie déjà terminée.",
+        err_noposes: "Pas de poses pour cette catégorie.",
+        room_code: "Code", team_a: "Équipe A", team_b: "Équipe B",
+        btn_join_team: "Rejoindre", btn_ready: "✓ Prêt", btn_start: "▶ Démarrer",
+        lobby_hint: "En attente que tous les joueurs soient prêts…",
+        ready_count: " joueur(s) prêt(s)",
+        cat_statues: "Statues", cat_spongebob: "Bob L'éponge", cat_mix: "Mix",
+        need_team: "Rejoins une équipe d'abord.",
+        need_players: "Il faut au moins 1 joueur par équipe.",
       },
       en: {
-        back:          "← Back",
-        create_title:  "Create a room",
-        create_desc:   "You'll be the <strong>Announcer</strong> — you see the pose, the other must guess it.",
-        label_category:"Category",
-        label_levels:  "Number of levels",
-        btn_create:    "Create room",
-        btn_creating:  "Creating…",
-        or:            "or",
-        join_title:    "Join a room",
-        join_desc:     "You'll be the <strong>Guesser</strong> — strike the pose with your camera.",
-        label_code:    "Room code",
-        btn_join:      "Join",
-        err_code:      "Enter a valid code.",
-        err_notfound:  "Room not found.",
-        err_finished:  "This room is already finished.",
-        err_noposes:   "This category has no poses yet. Choose Bob L'éponge or Mix.",
-        cat_statues:   "Statues",
+        back: "← Back", create_title: "Create a room",
+        create_desc: "Create a room and invite friends with the code.",
+        your_name: "Your name", label_category: "Category",
+        label_levels: "Number of poses", btn_create: "Create room",
+        btn_creating: "Creating…", or: "or", join_title: "Join a room",
+        label_code: "Room code", btn_join: "Join",
+        err_name: "Enter your name.", err_code: "Invalid code.",
+        err_notfound: "Room not found.", err_finished: "Game already finished.",
+        err_noposes: "No poses for this category.",
+        room_code: "Code", team_a: "Team A", team_b: "Team B",
+        btn_join_team: "Join", btn_ready: "✓ Ready", btn_start: "▶ Start",
+        lobby_hint: "Waiting for all players to be ready…",
+        ready_count: " player(s) ready",
+        cat_statues: "Statues", cat_spongebob: "Bob L'éponge", cat_mix: "Mix",
+        need_team: "Join a team first.",
+        need_players: "Need at least 1 player per team.",
       },
     };
 
     let lang = localStorage.getItem("poseLang") || "fr";
-
     function t(key) { return (T[lang] || T.fr)[key] || key; }
-
     function applyTranslations() {
       document.documentElement.lang = lang;
-      document.querySelectorAll("[data-i18n]").forEach(el => {
-        el.innerHTML = t(el.dataset.i18n);
-      });
-      // select options
-      document.querySelectorAll("[data-i18n-opt]").forEach(el => {
-        el.textContent = t(el.dataset.i18nOpt);
-      });
-      // lang pills
-      document.querySelectorAll(".lang-pill").forEach(btn => {
-        btn.classList.toggle("active", btn.dataset.lang === lang);
-      });
+      document.querySelectorAll("[data-i18n]").forEach(el => { el.innerHTML = t(el.dataset.i18n); });
+      document.querySelectorAll("[data-i18n-opt]").forEach(el => { el.textContent = t(el.dataset.i18nOpt); });
+      document.querySelectorAll(".lang-pill").forEach(b => b.classList.toggle("active", b.dataset.lang === lang));
     }
-
     document.querySelectorAll(".lang-pill").forEach(btn => {
-      btn.addEventListener("click", () => {
-        lang = btn.dataset.lang;
-        localStorage.setItem("poseLang", lang);
-        applyTranslations();
-      });
+      btn.addEventListener("click", () => { lang = btn.dataset.lang; localStorage.setItem("poseLang", lang); applyTranslations(); });
     });
-
     applyTranslations();
 
-    // ── Firebase logic ────────────────────────────────────────────────────────
-    function randomCode() {
-      return Math.random().toString(36).substring(2, 8).toUpperCase();
-    }
-
+    // ── State ─────────────────────────────────────────────────────────────────
     const LABELS = {
       spongebob: ["angry","bıkmış","boring","magara_adami","merhaba","ne_diyosun_be","ordek","perfect","rainbow","scream","sus"],
-      statues:   [],
+      statues: [],
     };
+
+    let myPlayerId = sessionStorage.getItem("tabuPlayerId") || ("p_" + Math.random().toString(36).substring(2, 10));
+    sessionStorage.setItem("tabuPlayerId", myPlayerId);
+    let myTeam = null;
+    let roomCode = null;
+    let isHost = false;
+    let roomRef = null;
 
     function getQueue(category, count) {
       let pool = [];
       if (category === "spongebob") pool = LABELS.spongebob.map(l => ({ label: l, cat: "spongebob" }));
       else if (category === "statues") pool = LABELS.statues.map(l => ({ label: l, cat: "statues" }));
-      else pool = [
-        ...LABELS.spongebob.map(l => ({ label: l, cat: "spongebob" })),
-        ...LABELS.statues.map(l => ({ label: l, cat: "statues" })),
-      ];
+      else pool = [...LABELS.spongebob.map(l => ({ label: l, cat: "spongebob" })), ...LABELS.statues.map(l => ({ label: l, cat: "statues" }))];
       return pool.sort(() => Math.random() - 0.5).slice(0, Math.min(count, pool.length));
     }
 
+    function randomCode() { return Math.random().toString(36).substring(2, 8).toUpperCase(); }
+
+    // ── Create ────────────────────────────────────────────────────────────────
     document.getElementById("createBtn").addEventListener("click", async () => {
-      const btn      = document.getElementById("createBtn");
+      const name = document.getElementById("createName").value.trim();
+      if (!name) { alert(t("err_name")); return; }
       const category = document.getElementById("createCategory").value;
       const levels   = parseInt(document.getElementById("createLevels").value);
-      const code     = randomCode();
       const queue    = getQueue(category, levels);
+      if (queue.length === 0) { alert(t("err_noposes")); return; }
 
-      if (queue.length === 0) {
-        alert(t("err_noposes"));
-        return;
-      }
-
+      const btn = document.getElementById("createBtn");
       btn.textContent = t("btn_creating");
       btn.disabled = true;
 
+      const code = randomCode();
+      roomCode = code;
+      isHost   = true;
+
       await set(ref(db, "rooms/" + code), {
-        category,
-        status:        "waiting",
-        current_level: 0,
-        score:         0,
-        queue,
-        results:       [],
-        created_at:    Date.now(),
+        category, status: "lobby",
+        current_turn: 0, current_level: 0,
+        scores: { A: 0, B: 0 },
+        queue, results: [],
+        host: myPlayerId,
+        players: {
+          [myPlayerId]: { name, team: null, ready: false }
+        },
+        created_at: Date.now(),
       });
 
-      window.location.href = "tabu-anlatici.html?room=" + code;
+      btn.textContent = t("btn_create");
+      btn.disabled = false;
+      enterLobby(code, name);
     });
 
+    // ── Join ──────────────────────────────────────────────────────────────────
     document.getElementById("joinBtn").addEventListener("click", async () => {
-      const code  = document.getElementById("joinCode").value.trim().toUpperCase();
+      const name = document.getElementById("joinName").value.trim();
+      const code = document.getElementById("joinCode").value.trim().toUpperCase();
       const errEl = document.getElementById("joinError");
       errEl.classList.add("hidden");
 
-      if (code.length < 4) {
-        errEl.textContent = t("err_code");
-        errEl.classList.remove("hidden");
-        return;
-      }
+      if (!name) { errEl.textContent = t("err_name"); errEl.classList.remove("hidden"); return; }
+      if (code.length < 4) { errEl.textContent = t("err_code"); errEl.classList.remove("hidden"); return; }
 
       const snap = await get(child(ref(db), "rooms/" + code));
-      if (!snap.exists()) {
-        errEl.textContent = t("err_notfound");
-        errEl.classList.remove("hidden");
-        return;
-      }
+      if (!snap.exists()) { errEl.textContent = t("err_notfound"); errEl.classList.remove("hidden"); return; }
+      if (snap.val().status === "finished") { errEl.textContent = t("err_finished"); errEl.classList.remove("hidden"); return; }
 
-      if (snap.val().status === "finished") {
-        errEl.textContent = t("err_finished");
-        errEl.classList.remove("hidden");
-        return;
-      }
-
-      window.location.href = "tabu-tahminci.html?room=" + code;
+      roomCode = code;
+      await update(ref(db, "rooms/" + code + "/players/" + myPlayerId), { name, team: null, ready: false });
+      enterLobby(code, name);
     });
 
-    document.getElementById("joinCode").addEventListener("input", e => {
-      e.target.value = e.target.value.toUpperCase();
+    document.getElementById("joinCode").addEventListener("input", e => { e.target.value = e.target.value.toUpperCase(); });
+
+    // ── Lobby ─────────────────────────────────────────────────────────────────
+    function enterLobby(code, name) {
+      document.getElementById("stepEntry").classList.add("hidden");
+      document.getElementById("stepLobby").classList.remove("hidden");
+      document.getElementById("lobbyCode").textContent = code;
+      roomRef = ref(db, "rooms/" + code);
+      listenLobby();
+    }
+
+    function listenLobby() {
+      onValue(roomRef, snap => {
+        if (!snap.exists()) return;
+        const room = snap.val();
+
+        // If game started, go to game page
+        if (room.status === "playing") {
+          window.location.href = "tabu-oyun.html?room=" + roomCode + "&player=" + myPlayerId;
+          return;
+        }
+
+        // Category badge
+        const catKey = "cat_" + room.category;
+        document.getElementById("lobbyCategory").textContent = t(catKey);
+
+        const players = room.players || {};
+        const teamA = Object.entries(players).filter(([, p]) => p.team === "A");
+        const teamB = Object.entries(players).filter(([, p]) => p.team === "B");
+
+        renderTeam("teamAList", teamA, players);
+        renderTeam("teamBList", teamB, players);
+
+        // Ready status
+        const allPlayers = Object.values(players);
+        const readyCount = allPlayers.filter(p => p.ready).length;
+        document.getElementById("readyStatus").textContent = readyCount + "/" + allPlayers.length + t("ready_count");
+
+        // Host can start if all ready and both teams have players
+        const allReady = allPlayers.length > 0 && allPlayers.every(p => p.ready);
+        const teamsOk  = teamA.length > 0 && teamB.length > 0;
+        const startBtn = document.getElementById("startGameBtn");
+
+        if (isHost && room.host === myPlayerId) {
+          startBtn.classList.toggle("hidden", !(allReady && teamsOk));
+        }
+
+        // Update my ready button
+        const me = players[myPlayerId];
+        if (me) {
+          const readyBtn = document.getElementById("readyBtn");
+          readyBtn.textContent = me.ready ? "✓ " + (lang === "fr" ? "Prêt !" : "Ready!") : t("btn_ready");
+          readyBtn.style.opacity = me.ready ? "0.6" : "1";
+          myTeam = me.team;
+        }
+
+        // Join team buttons highlight
+        document.querySelectorAll(".lobby-join-team-btn").forEach(btn => {
+          btn.classList.toggle("active-team", btn.dataset.team === myTeam);
+        });
+      });
+    }
+
+    function renderTeam(listId, members, allPlayers) {
+      const ul = document.getElementById(listId);
+      ul.innerHTML = members.length === 0
+        ? '<li class="lobby-player-empty">—</li>'
+        : members.map(([id, p]) =>
+            '<li class="lobby-player-item' + (id === myPlayerId ? " is-me" : "") + '">' +
+            '<span class="player-name">' + escHtml(p.name) + '</span>' +
+            (p.ready ? '<span class="player-ready-dot">✓</span>' : '') +
+            '</li>'
+          ).join("");
+    }
+
+    function escHtml(s) { return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+    // Join team buttons
+    document.querySelectorAll(".lobby-join-team-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if (!roomCode) return;
+        const team = btn.dataset.team;
+        myTeam = team;
+        await update(ref(db, "rooms/" + roomCode + "/players/" + myPlayerId), { team, ready: false });
+      });
     });
+
+    // Ready button
+    document.getElementById("readyBtn").addEventListener("click", async () => {
+      if (!roomCode) return;
+      if (!myTeam) { alert(t("need_team")); return; }
+      const snap = await get(ref(db, "rooms/" + roomCode + "/players/" + myPlayerId));
+      const cur  = snap.val();
+      await update(ref(db, "rooms/" + roomCode + "/players/" + myPlayerId), { ready: !cur.ready });
+    });
+
+    // Start game (host only)
+    document.getElementById("startGameBtn").addEventListener("click", async () => {
+      if (!roomCode) return;
+      const snap   = await get(ref(db, "rooms/" + roomCode));
+      const room   = snap.val();
+      const players = room.players || {};
+      const teamA  = Object.entries(players).filter(([, p]) => p.team === "A").map(([id]) => id);
+      const teamB  = Object.entries(players).filter(([, p]) => p.team === "B").map(([id]) => id);
+
+      if (teamA.length === 0 || teamB.length === 0) { alert(t("need_players")); return; }
+
+      // Build rotation: first turn = Team A announces, Team B guesses
+      const firstTurn = buildTurn(teamA, teamB, 0, {});
+
+      await update(ref(db, "rooms/" + roomCode), {
+        status: "playing",
+        current_turn: 0,
+        current_level: 0,
+        turn_history: {},
+        team_order: ["A", "B"],
+        teams: { A: teamA, B: teamB },
+        current_roles: firstTurn,
+        wrong_requests: {},
+      });
+    });
+
+    // ── Turn builder (exported so tabu-oyun can reuse via Firebase) ───────────
+    function buildTurn(teamA, teamB, turnIndex, turnHistory) {
+      // Which team announces this turn?
+      const announcingTeam = turnIndex % 2 === 0 ? "A" : "B";
+      const guessingTeam   = announcingTeam === "A" ? "B" : "A";
+      const annTeam = announcingTeam === "A" ? teamA : teamB;
+      const gueTeam = announcingTeam === "A" ? teamB : teamA;
+
+      const announcer = pickRotating(annTeam, "announcer_" + announcingTeam, turnIndex, turnHistory);
+      const guesser   = pickRotating(gueTeam, "guesser_"   + guessingTeam,  turnIndex, turnHistory);
+
+      return { announcer, guesser, announcing_team: announcingTeam, guessing_team: guessingTeam };
+    }
+
+    function pickRotating(team, roleKey, turnIndex, history) {
+      if (team.length === 0) return null;
+      if (team.length === 1) return team[0];
+      // Find who has done this role least recently
+      const counts = {};
+      team.forEach(id => { counts[id] = 0; });
+      Object.values(history).forEach(turn => {
+        if (turn[roleKey] && counts[turn[roleKey]] !== undefined) counts[turn[roleKey]]++;
+      });
+      const minCount = Math.min(...Object.values(counts));
+      const eligible = team.filter(id => counts[id] === minCount);
+      return eligible[Math.floor(Math.random() * eligible.length)];
+    }
   </script>
 </body>
 </html>

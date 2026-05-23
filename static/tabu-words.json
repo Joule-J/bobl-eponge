@@ -1,0 +1,16 @@
+{
+  "spongebob": {
+    "angry":          ["colère", "fâché", "énervé", "rouge", "furieux"],
+    "bıkmış":         ["ennui", "fatigué", "las", "marre", "soupir"],
+    "boring":         ["ennuyeux", "nul", "endormi", "monotone", "lent"],
+    "magara_adami":   ["grotte", "homme", "préhistoire", "caverne", "primitif"],
+    "merhaba":        ["bonjour", "salut", "hello", "coucou", "bonsoir"],
+    "ne_diyosun_be":  ["quoi", "pardon", "répète", "comprends", "bizarre"],
+    "ordek":          ["canard", "bec", "oiseau", "coin", "plumes"],
+    "perfect":        ["parfait", "super", "génial", "excellent", "bravo"],
+    "rainbow":        ["arc-en-ciel", "couleurs", "arc", "ciel", "pluie"],
+    "scream":         ["cri", "peur", "hurle", "effrayé", "terreur"],
+    "sus":            ["silence", "chut", "tais", "bouche", "doigt"]
+  },
+  "statues": {}
+}
