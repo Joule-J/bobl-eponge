@@ -89,6 +89,7 @@ const TRANSLATIONS = {
   },
 };
 
+if (!localStorage.getItem("poseLangV2")) { localStorage.setItem("poseLang", "tr"); localStorage.setItem("poseLangV2", "1"); }
 let currentLang = localStorage.getItem("poseLang") || "tr";
 
 function t(key) {

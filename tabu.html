@@ -255,6 +255,7 @@
       },
     };
 
+    if (!localStorage.getItem("poseLangV2")) { localStorage.setItem("poseLang", "tr"); localStorage.setItem("poseLangV2", "1"); }
     let lang = localStorage.getItem("poseLang") || "tr";
     function t(key) { return (T[lang] || T.fr)[key] || key; }
     function applyTranslations() {
