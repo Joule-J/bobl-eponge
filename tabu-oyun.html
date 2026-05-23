@@ -47,10 +47,10 @@
       </section>
 
       <!-- ── ANNOUNCER VIEW ── -->
-      <section id="announcerScreen" class="screen" style="display:none">
+      <section id="announcerScreen" class="screen announcer-layout" style="display:none">
 
-        <!-- Pose card + tabu words -->
-        <div class="stage">
+        <!-- LEFT: narrow image -->
+        <div class="stage ann-image-stage">
           <div class="stage-header">
             <div class="stage-meta">
               <span class="stage-eyebrow" data-i18n="eyebrow_target">Pose cible</span>
@@ -61,23 +61,30 @@
               <button class="btn btn-secondary" id="skipAnnBtn" data-i18n="btn_skip">Passer</button>
             </div>
           </div>
-
           <div class="meme-wrap">
             <img id="annTargetImage" alt="" />
-            <div class="meme-label-bar" id="annLabelBar" style="display:none">
-              <span class="meme-name" id="annMemeLabel">—</span>
-              <span class="meme-tag" id="annCatTag">—</span>
-            </div>
-          </div>
-
-          <!-- Tabu words -->
-          <div class="tabu-words-bar" id="tabuWordsBar">
-            <span class="tabu-words-label" data-i18n="forbidden_words">⛔ Ne dis pas :</span>
-            <div class="tabu-words-list" id="tabuWordsList"></div>
           </div>
         </div>
 
-        <!-- Wrong / status panel -->
+        <!-- CENTER: tabu card -->
+        <div class="tabu-card-wrap">
+          <div class="tabu-card" id="tabuCard">
+            <div class="tabu-card-header">
+              <span class="tabu-card-eyebrow">TABU</span>
+              <span class="tabu-card-pose-name" id="tabuCardPoseName">—</span>
+              <span class="tabu-card-cat" id="tabuCardCat">—</span>
+            </div>
+            <div class="tabu-card-divider"></div>
+            <ul class="tabu-card-words" id="tabuCardWords">
+              <!-- filled by JS -->
+            </ul>
+            <div class="tabu-card-footer">
+              <span class="tabu-card-footer-icon">⛔</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: wrong / status panel -->
         <div class="stage">
           <div class="stage-header">
             <div class="stage-meta">
@@ -622,15 +629,16 @@
         showScreen("announcerScreen");
         if (item) {
           document.getElementById("annTargetImage").src        = photoPath(item.cat, item.label);
-          document.getElementById("annLabelBar").style.display = "flex";
-          document.getElementById("annMemeLabel").textContent  = item.label.replace(/_/g, " ");
-          document.getElementById("annCatTag").textContent     = item.cat === "spongebob" ? "Bob L'éponge" : t("cat_statues");
           document.getElementById("annLevelTitle").textContent = t("level_prefix") + (level + 1);
           document.getElementById("annLevelNum").textContent   = level + 1;
-          // Tabu words
+          // Tabu card
+          const poseName = item.label.replace(/_/g, " ");
+          const catLabel = item.cat === "spongebob" ? "Bob L'éponge" : t("cat_statues");
+          document.getElementById("tabuCardPoseName").textContent = poseName;
+          document.getElementById("tabuCardCat").textContent      = catLabel;
           const words = getTabuWords(item.cat, item.label);
-          document.getElementById("tabuWordsList").innerHTML = words.map(w =>
-            '<span class="tabu-word-chip">' + w + '</span>'
+          document.getElementById("tabuCardWords").innerHTML = words.map(w =>
+            '<li class="tabu-card-word"><span class="tabu-card-word-icon">✕</span>' + w + '</li>'
           ).join("");
           renderProgress("annProgress", results, total);
         }
