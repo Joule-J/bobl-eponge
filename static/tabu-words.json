@@ -1,16 +1,16 @@
 {
   "spongebob": {
-    "angry":          ["colère", "fâché", "énervé", "rouge", "furieux"],
-    "bıkmış":         ["ennui", "fatigué", "las", "marre", "soupir"],
-    "boring":         ["ennuyeux", "nul", "endormi", "monotone", "lent"],
-    "magara_adami":   ["grotte", "homme", "préhistoire", "caverne", "primitif"],
-    "merhaba":        ["bonjour", "salut", "hello", "coucou", "bonsoir"],
-    "ne_diyosun_be":  ["quoi", "pardon", "répète", "comprends", "bizarre"],
-    "ordek":          ["canard", "bec", "oiseau", "coin", "plumes"],
-    "perfect":        ["parfait", "super", "génial", "excellent", "bravo"],
-    "rainbow":        ["arc-en-ciel", "couleurs", "arc", "ciel", "pluie"],
-    "scream":         ["cri", "peur", "hurle", "effrayé", "terreur"],
-    "sus":            ["silence", "chut", "tais", "bouche", "doigt"]
+    "angry":          ["sinirli", "dümdüz", "sade", "kızgın", "aşağı"],
+    "bıkmış":         ["el", "kaldırmak", "sıkılmış", "normal", "yukarı"],
+    "boring":         ["korkmuş", "sıkılmış", "bıkkın", "eller", "günlük hayatım"],
+    "magara_adami":   ["eski", "ilkel", "elleri açmak"],
+    "merhaba":        ["merhaba", "tokalaşmak", "el uzatmak", "tanışmak", "selam vermek"],
+    "ne_diyosun_be":  ["şaşırmak", "yargılamak", "anlamamak", "arkasını dönmek", "yukarı bakmak"],
+    "ordek":          ["eğilmek", "komik", "tavuk", "gıdaklamak"],
+    "perfect":        ["superman", "poz vermek", "güçlü", "model"],
+    "rainbow":        ["mutlu", "yağmur", "güneş", "gökyüzü", "elleri açmak"],
+    "scream":         ["bağırma", "sesleniş", "eller", "baş", "korkma"],
+    "sus":            ["bezgin", "durmak", "düz", "yargılayıcı"]
   },
   "statues": {}
 }

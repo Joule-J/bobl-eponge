@@ -19,6 +19,7 @@
       <div style="display:flex;align-items:center;gap:12px">
         <a class="lobby-back" href="index.html" data-i18n="back">← Retour</a>
         <div class="lobby-lang-toggle">
+          <button class="lang-pill" data-lang="tr">TR</button>
           <button class="lang-pill" data-lang="fr">FR</button>
           <button class="lang-pill" data-lang="en">EN</button>
         </div>
@@ -171,6 +172,33 @@
 
     // ── i18n ──────────────────────────────────────────────────────────────────
     const T = {
+      tr: {
+        back: "← Geri", create_title: "Oda oluştur",
+        create_desc: "Bir oda oluştur ve arkadaşlarını kodla davet et.",
+        your_name: "Adın", label_category: "Kategori",
+        label_mode: "Oyun modu", mode_free: "🎮 Serbest", mode_team: "⚔ Takımlar",
+        label_levels: "Poz sayısı", btn_create: "Oda oluştur",
+        btn_creating: "Oluşturuluyor…", or: "veya", join_title: "Odaya katıl",
+        label_code: "Oda kodu", btn_join: "Katıl",
+        err_name: "Adını gir.", err_code: "Geçersiz kod.",
+        err_notfound: "Oda bulunamadı.", err_finished: "Oyun zaten bitti.",
+        err_noposes: "Bu kategori için poz yok.",
+        room_code: "Kod", team_a: "Takım A", team_b: "Takım B",
+        players_label: "Oyuncular",
+        btn_join_team: "Katıl", btn_ready: "✓ Hazır", btn_start: "▶ Başlat",
+        lobby_hint: "Tüm oyuncuların hazır olması bekleniyor…",
+        ready_count: " oyuncu hazır",
+        cat_statues: "Heykeller", cat_spongebob: "Süngerbob", cat_mix: "Karışık",
+        need_team: "Önce bir takıma katıl.",
+        need_players: "Her takımda en az 1 oyuncu gerekli.",
+        need_two_players: "Başlamak için en az 2 oyuncu gerekli.",
+        open_rooms_title: "Açık odalar",
+        open_rooms_empty: "Şu an açık oda yok.",
+        open_room_join: "Katıl",
+        open_room_players: "oyuncu",
+        open_room_free: "Serbest",
+        open_room_team: "Takımlar",
+      },
       fr: {
         back: "← Retour", create_title: "Créer une salle",
         create_desc: "Crée une salle et invite tes amis avec le code.",
@@ -227,7 +255,7 @@
       },
     };
 
-    let lang = localStorage.getItem("poseLang") || "fr";
+    let lang = localStorage.getItem("poseLang") || "tr";
     function t(key) { return (T[lang] || T.fr)[key] || key; }
     function applyTranslations() {
       document.documentElement.lang = lang;

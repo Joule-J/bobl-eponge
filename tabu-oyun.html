@@ -28,6 +28,7 @@
           <span class="tabu-score-chip team-b-chip">B: <strong id="scoreB">0</strong></span>
         </div>
         <div class="lobby-lang-toggle">
+          <button class="lang-pill" data-lang="tr">TR</button>
           <button class="lang-pill" data-lang="fr">FR</button>
           <button class="lang-pill" data-lang="en">EN</button>
         </div>
@@ -294,6 +295,31 @@
 
     // ── i18n ──────────────────────────────────────────────────────────────────
     const T = {
+      tr: {
+        role_announcer: "👁 Anlatıcı", role_guesser: "🎯 Tahmin Eden", role_spectator: "👥 İzleyici",
+        eyebrow_target: "Hedef poz", btn_skip: "Geç", btn_exit: "✕ Çıkış",
+        forbidden_words: "⛔ Söyleme:", eyebrow_control: "Kontrol",
+        title_wrong_panel: "Yasak kelime?",
+        wrong_requested: "⚠ Rakip takım yasak kelime bildirdi!",
+        btn_confirm_wrong: "Onayla — Yanlış", btn_deny_wrong: "Reddet",
+        self_wrong_desc: "Yasak kelime söyledin mi?",
+        btn_wrong: "✗ Yanlış",
+        eyebrow_camera: "Kamera", title_pose: "Pozu yap!",
+        badge_success: "✓ Başardın!",
+        eyebrow_dashboard: "Pano", title_progress: "İlerleme",
+        label_level: "Seviye", label_score: "Puan",
+        spec_wrong_desc: "Anlatıcı yasak kelime söyledi mi?",
+        wrong_pending: "Bildirim gönderildi — bekleniyor…",
+        finished_title: "Oyun bitti!", btn_newgame: "↺ Yeni oyun",
+        hint_hold: " — pozu koru!", hint_closer: "En yakın: ",
+        wait_your_turn: "Sıra sende değil",
+        wait_you_announce: "Anlatıcısın!",
+        wait_you_guess: "Tahmin edeceksin!",
+        wait_roles: "Anlatıcı: ", wait_guesser: "Tahmin Eden: ",
+        team_label: "Takım ", wins: " kazandı!",
+        level_prefix: "Seviye ", cat_statues: "Heykeller",
+        turn_prefix: "Tur ",
+      },
       fr: {
         role_announcer: "👁 Annonciateur", role_guesser: "🎯 Devineur", role_spectator: "👥 Spectateur",
         eyebrow_target: "Pose cible", btn_skip: "Passer", btn_exit: "✕ Quitter",
@@ -346,7 +372,7 @@
       },
     };
 
-    let lang = localStorage.getItem("poseLang") || "fr";
+    let lang = localStorage.getItem("poseLang") || "tr";
     function t(key) { return (T[lang] || T.fr)[key] || key; }
     function applyTranslations() {
       document.documentElement.lang = lang;

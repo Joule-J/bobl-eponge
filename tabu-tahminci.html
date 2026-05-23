@@ -22,6 +22,7 @@
       </div>
       <div class="topbar-controls" style="display:flex;align-items:center;gap:12px">
         <div class="lobby-lang-toggle">
+          <button class="lang-pill" data-lang="tr">TR</button>
           <button class="lang-pill" data-lang="fr">FR</button>
           <button class="lang-pill" data-lang="en">EN</button>
         </div>
@@ -130,6 +131,23 @@
 
     // ── i18n ─────────────────────────────────────────────────────────────────
     const T = {
+      tr: {
+        role:              "🎯 Tahmin Eden",
+        wait_title:        "Anlatıcı bekleniyor…",
+        wait_desc:         "Oda kodu:",
+        eyebrow_camera:    "Kamera",
+        title_pose:        "Pozu yap!",
+        badge_success:     "✓ Başardın!",
+        eyebrow_dashboard: "Pano",
+        title_progress:    "İlerleme",
+        label_score:       "Puan",
+        label_level:       "Seviye",
+        label_total:       "Toplam",
+        finished_title:    "Oyun bitti!",
+        btn_newgame:       "↺ Yeni oyun",
+        hint_hold:         " — pozu koru!",
+        hint_closer:       "En yakın: ",
+      },
       fr: {
         role:              "🎯 Devineur",
         wait_title:        "En attente de l'Annonciateur…",
@@ -166,9 +184,9 @@
       },
     };
 
-    let lang = localStorage.getItem("poseLang") || "fr";
+    let lang = localStorage.getItem("poseLang") || "tr";
 
-    function t(key) { return (T[lang] || T.fr)[key] || key; }
+    function t(key) { return (T[lang] || T.tr)[key] || key; }
 
     function applyTranslations() {
       document.documentElement.lang = lang;

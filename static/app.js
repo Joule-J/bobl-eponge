@@ -1,5 +1,34 @@
 // ── i18n ─────────────────────────────────────────────────────────────────────
 const TRANSLATIONS = {
+  tr: {
+    cat_spongebob:    "Süngerbob",
+    cat_statues:      "Heykeller",
+    tab_live:         "Canlı Görüntü",
+    tab_levels:       "Seviye Modu",
+    tab_mix:          "Karışık",
+    camera:           "Kamera",
+    take_pose:        "Poz ver",
+    btn_play:         "▶ Oyna",
+    btn_stop:         "◼ Durdur",
+    btn_skip:         "Geç",
+    btn_restart:      "↺ Yeniden",
+    matched:          "✓ Eşleşti",
+    prediction:       "Tahmin",
+    waiting:          "Görüntü bekleniyor…",
+    live_placeholder: "Poz ver — görüntü çıkar",
+    tag_image:        "Görüntü",
+    objective:        "Hedef",
+    level_n:          "Seviye 1",
+    guess_placeholder:"Oyna — hedef çıkar",
+    tag_target:       "Hedef",
+    hold_pose:        "Pozu koru, seviyeyi geç",
+    next:             "✓ Sonraki",
+    results_title:    "Sonuçlar",
+    hint_hold:        " — pozu koru!",
+    hint_closer:      "En yakın: ",
+    no_model:         "Teachable Machine modeli yüklenemedi.",
+    statues_no_model: "Heykeller modeli henüz yüklenmedi. Etkinleştirmek için static/statues_model/ ekleyin.",
+  },
   fr: {
     cat_spongebob:    "Bob L'éponge",
     cat_statues:      "Statues",
@@ -60,7 +89,7 @@ const TRANSLATIONS = {
   },
 };
 
-let currentLang = "fr";
+let currentLang = localStorage.getItem("poseLang") || "tr";
 
 function t(key) {
   return (TRANSLATIONS[currentLang] || TRANSLATIONS.fr)[key] || key;
@@ -612,6 +641,7 @@ setupDropdown("categoryBtn", "categoryMenu", item => {
 // Language dropdown
 setupDropdown("langBtn", "langMenu", item => {
   currentLang = item.dataset.lang;
+  localStorage.setItem("poseLang", currentLang);
   el("langLabel").textContent = currentLang.toUpperCase();
   applyTranslations();
   renderTabs();
@@ -667,6 +697,7 @@ el("statueGuessTargetImage").style.display = "none";
 renderProgress("guessProgress",       [], Math.min(GUESS_LEVEL_COUNT, CATEGORIES.spongebob.labels.length));
 renderProgress("statueGuessProgress", [], GUESS_LEVEL_COUNT);
 
+el("langLabel").textContent = currentLang.toUpperCase();
 applyTranslations();
 renderTabs();
 switchCategory("spongebob");
