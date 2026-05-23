@@ -279,6 +279,13 @@
     // Remove player on disconnect; if room becomes empty, remove the room too
     onDisconnect(playerRef).remove();
 
+    // Heartbeat: update room's last_seen every 15s so stale rooms can be filtered out
+    async function heartbeat() {
+      try { await update(roomRef, { last_seen: Date.now() }); } catch(e) {}
+    }
+    heartbeat();
+    const heartbeatInterval = setInterval(heartbeat, 15000);
+
     async function leaveRoom() {
       await remove(playerRef);
       const snap = await get(ref(db, "rooms/" + ROOM + "/players"));
@@ -289,6 +296,7 @@
 
     document.getElementById("exitBtn").addEventListener("click", async e => {
       e.preventDefault();
+      clearInterval(heartbeatInterval);
       await leaveRoom();
       window.location.href = "tabu.html";
     });

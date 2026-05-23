@@ -279,8 +279,16 @@
         return;
       }
       const rooms = snap.val();
-      const open  = Object.entries(rooms).filter(([, r]) =>
-        r.status === "lobby" || r.status === "waiting"
+      const now  = Date.now();
+      // Delete stale rooms older than 45s with no active heartbeat
+      Object.entries(rooms).forEach(([code, r]) => {
+        if (r.last_seen && (now - r.last_seen > 45000) && r.status !== "finished") {
+          remove(ref(db, "rooms/" + code)).catch(() => {});
+        }
+      });
+      const open = Object.entries(rooms).filter(([, r]) =>
+        (r.status === "lobby" || r.status === "waiting") &&
+        r.last_seen && (now - r.last_seen < 45000)
       );
       section.style.display = "block";
       if (open.length === 0) {
@@ -398,6 +406,8 @@
     document.getElementById("joinCode").addEventListener("input", e => { e.target.value = e.target.value.toUpperCase(); });
 
     // ── Lobby ─────────────────────────────────────────────────────────────────
+    let lobbyHeartbeat = null;
+
     async function enterLobby(code, name) {
       document.getElementById("stepEntry").classList.add("hidden");
       document.getElementById("stepLobby").classList.remove("hidden");
@@ -407,6 +417,12 @@
       // On disconnect: remove this player; if room becomes empty, remove room
       const myPlayerRef = ref(db, "rooms/" + code + "/players/" + myPlayerId);
       onDisconnect(myPlayerRef).remove();
+
+      // Heartbeat
+      const hb = async () => { try { await update(roomRef, { last_seen: Date.now() }); } catch(e) {} };
+      hb();
+      if (lobbyHeartbeat) clearInterval(lobbyHeartbeat);
+      lobbyHeartbeat = setInterval(hb, 15000);
 
       listenLobby();
     }
@@ -421,7 +437,7 @@
     function listenLobby() {
       onValue(roomRef, snap => {
         if (!snap.exists()) {
-          // Room was deleted (everyone left); go back to entry
+          if (lobbyHeartbeat) { clearInterval(lobbyHeartbeat); lobbyHeartbeat = null; }
           document.getElementById("stepLobby").classList.add("hidden");
           document.getElementById("stepEntry").classList.remove("hidden");
           roomCode = null; roomRef = null;
