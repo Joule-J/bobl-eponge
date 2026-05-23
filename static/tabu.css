@@ -4,12 +4,20 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 24px;
-  padding: 40px 24px;
+  padding: 40px 24px 60px;
   background:
     linear-gradient(rgba(249, 237, 91, 0.18), rgba(249, 237, 91, 0.18)),
     url("/static/squarepants.jpg") center center / cover no-repeat fixed;
+}
+
+#stepEntry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
 }
 
 .lobby-brand {
