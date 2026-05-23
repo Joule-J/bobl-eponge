@@ -280,15 +280,15 @@
       }
       const rooms = snap.val();
       const now  = Date.now();
-      // Delete stale rooms older than 45s with no active heartbeat
+      // Delete stale rooms: older than 90s, or no heartbeat at all (legacy rooms)
       Object.entries(rooms).forEach(([code, r]) => {
-        if (r.last_seen && (now - r.last_seen > 45000) && r.status !== "finished") {
+        if (!r.last_seen || (now - r.last_seen > 90000 && r.status !== "finished")) {
           remove(ref(db, "rooms/" + code)).catch(() => {});
         }
       });
       const open = Object.entries(rooms).filter(([, r]) =>
         (r.status === "lobby" || r.status === "waiting") &&
-        r.last_seen && (now - r.last_seen < 45000)
+        r.last_seen && (now - r.last_seen < 90000)
       );
       section.style.display = "block";
       if (open.length === 0) {
@@ -422,7 +422,7 @@
       const hb = async () => { try { await update(roomRef, { last_seen: Date.now() }); } catch(e) {} };
       hb();
       if (lobbyHeartbeat) clearInterval(lobbyHeartbeat);
-      lobbyHeartbeat = setInterval(hb, 15000);
+      lobbyHeartbeat = setInterval(hb, 20000);
 
       listenLobby();
     }

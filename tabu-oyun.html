@@ -284,7 +284,7 @@
       try { await update(roomRef, { last_seen: Date.now() }); } catch(e) {}
     }
     heartbeat();
-    const heartbeatInterval = setInterval(heartbeat, 15000);
+    const heartbeatInterval = setInterval(heartbeat, 20000);
 
     async function leaveRoom() {
       await remove(playerRef);
