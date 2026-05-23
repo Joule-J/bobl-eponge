@@ -3,6 +3,10 @@ const TRANSLATIONS = {
   tr: {
     cat_spongebob:    "Süngerbob",
     cat_statues:      "Heykeller",
+    tab_catalog:      "📖 Katalog",
+    catalog_title:    "Poz Kataloğu",
+    catalog_all:      "Tümü",
+    catalog_empty:    "Bu kategoride görüntü yok.",
     tab_live:         "Canlı Görüntü",
     tab_levels:       "Seviye Modu",
     tab_mix:          "Karışık",
@@ -32,6 +36,10 @@ const TRANSLATIONS = {
   fr: {
     cat_spongebob:    "Bob L'éponge",
     cat_statues:      "Statues",
+    tab_catalog:      "📖 Catalogue",
+    catalog_title:    "Catalogue des poses",
+    catalog_all:      "Tout",
+    catalog_empty:    "Aucune image dans cette catégorie.",
     tab_live:         "Image Live",
     tab_levels:       "Mode Niveaux",
     tab_mix:          "Mix",
@@ -61,6 +69,10 @@ const TRANSLATIONS = {
   en: {
     cat_spongebob:    "Bob L'éponge",
     cat_statues:      "Statues",
+    tab_catalog:      "📖 Catalog",
+    catalog_title:    "Pose Catalog",
+    catalog_all:      "All",
+    catalog_empty:    "No images in this category.",
     tab_live:         "Live Image",
     tab_levels:       "Level Mode",
     tab_mix:          "Mix",
@@ -702,3 +714,64 @@ el("langLabel").textContent = currentLang.toUpperCase();
 applyTranslations();
 renderTabs();
 switchCategory("spongebob");
+
+// ── Catalog ───────────────────────────────────────────────────────────────────
+function buildCatalogItems(filterCat) {
+  const items = [];
+  if (filterCat === "all" || filterCat === "spongebob") {
+    CATEGORIES.spongebob.labels.forEach(label => items.push({ label, cat: "spongebob" }));
+  }
+  if (filterCat === "all" || filterCat === "statues") {
+    CATEGORIES.statues.labels.forEach(label => items.push({ label, cat: "statues" }));
+  }
+  return items;
+}
+
+function renderCatalog(filterCat) {
+  const grid = el("catalogGrid");
+  const items = buildCatalogItems(filterCat || "all");
+  if (items.length === 0) {
+    grid.innerHTML = '<div class="catalog-empty" data-i18n="catalog_empty">' + t("catalog_empty") + '</div>';
+    return;
+  }
+  grid.innerHTML = items.map(({ label, cat }) => {
+    const cfg  = CATEGORIES[cat];
+    const name = label.replace(/_/g, " ");
+    const catBadge = cat === "spongebob" ? t("cat_spongebob") : t("cat_statues");
+    return `<div class="catalog-card">
+      <div class="catalog-img-wrap">
+        <img src="${cfg.photoPath(label)}" alt="${name}" loading="lazy" />
+      </div>
+      <div class="catalog-card-body">
+        <span class="catalog-card-name">${name}</span>
+        <span class="catalog-card-cat">${catBadge}</span>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+let catalogActive = false;
+el("catalogTab").addEventListener("click", () => {
+  if (!catalogActive) {
+    // Hide all screens
+    document.querySelectorAll(".screen").forEach(s => { s.style.display = "none"; s.classList.remove("active"); });
+    document.querySelectorAll(".mode-tab").forEach(b => b.classList.remove("active"));
+    el("catalogTab").classList.add("active");
+    el("catalogScreen").style.display = "flex";
+    catalogActive = true;
+    renderCatalog("all");
+  } else {
+    el("catalogScreen").style.display = "none";
+    el("catalogTab").classList.remove("active");
+    catalogActive = false;
+    switchCategory(activeCategory);
+  }
+});
+
+el("catalogFilter").querySelectorAll(".catalog-filter-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    el("catalogFilter").querySelectorAll(".catalog-filter-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    renderCatalog(btn.dataset.cat);
+  });
+});

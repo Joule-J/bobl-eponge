@@ -85,6 +85,138 @@ body {
   color: #fff;
 }
 
+.mode-tab-catalog {
+  background: rgba(80, 180, 120, 0.22);
+  color: var(--ink);
+}
+
+.mode-tab-catalog.active {
+  background: #2eaa6e;
+  color: #fff;
+}
+
+/* ── Catalog screen ──────────────────────────────────────────────────────── */
+.catalog-screen {
+  display: none;
+  flex-direction: column;
+  gap: 0;
+  overflow-y: auto;
+  padding: 0 !important;
+}
+
+.catalog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--panel-yellow);
+  border-bottom: 3px solid rgba(32,20,7,0.12);
+  flex-shrink: 0;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.catalog-title {
+  font-family: "Bangers", sans-serif;
+  font-size: 1.4rem;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+
+.catalog-filter {
+  display: flex;
+  gap: 6px;
+}
+
+.catalog-filter-btn {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border: 2px solid rgba(32,20,7,0.18);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.catalog-filter-btn.active,
+.catalog-filter-btn:hover {
+  background: var(--ink);
+  color: #f9ed5b;
+}
+
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+  padding: 18px 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.catalog-card {
+  background: var(--panel-yellow);
+  border: 3px solid rgba(32,20,7,0.14);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 4px 4px 0 rgba(32,20,7,0.10);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.catalog-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 6px 7px 0 rgba(32,20,7,0.14);
+}
+
+.catalog-img-wrap {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: rgba(32,20,7,0.06);
+}
+
+.catalog-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.catalog-card-body {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.catalog-card-name {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--ink);
+  text-transform: capitalize;
+}
+
+.catalog-card-cat {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(32,20,7,0.5);
+}
+
+.catalog-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  font-size: 0.9rem;
+  color: rgba(32,20,7,0.5);
+}
+
 .mix-source-tag {
   font-size: 0.64rem;
   font-weight: 900;

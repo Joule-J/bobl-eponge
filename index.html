@@ -17,6 +17,7 @@
         <nav class="topbar-modes" id="topbarModes">
           <!-- filled by JS -->
           <button class="mode-tab mode-tab-mix" id="mixModeTab" data-screen="mixScreen" data-i18n="tab_mix">Mix</button>
+          <button class="mode-tab mode-tab-catalog" id="catalogTab" data-i18n="tab_catalog">📖 Katalog</button>
         </nav>
 
         <!-- CENTER: brand -->
@@ -299,6 +300,19 @@
             </div>
           </div>
 
+        </section>
+
+        <!-- ── CATALOG ── -->
+        <section id="catalogScreen" class="screen catalog-screen" style="display:none">
+          <div class="catalog-header">
+            <span class="catalog-title" data-i18n="catalog_title">Poz Kataloğu</span>
+            <div class="catalog-filter" id="catalogFilter">
+              <button class="catalog-filter-btn active" data-cat="all" data-i18n="catalog_all">Tümü</button>
+              <button class="catalog-filter-btn" data-cat="spongebob">Süngerbob</button>
+              <button class="catalog-filter-btn" data-cat="statues" data-i18n="cat_statues">Heykeller</button>
+            </div>
+          </div>
+          <div class="catalog-grid" id="catalogGrid"></div>
         </section>
 
       </div><!-- /screens -->
