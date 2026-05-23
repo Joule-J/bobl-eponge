@@ -252,7 +252,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
-    import { getDatabase, ref, onValue, update, get } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+    import { getDatabase, ref, onValue, update, get, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCx6NrESFkyL87PrdrVPxOp0OcsBlxF9ys",
@@ -272,7 +272,25 @@
 
     if (!ROOM || !ME) { window.location.href = "tabu.html"; }
 
-    const roomRef = ref(db, "rooms/" + ROOM);
+    const roomRef   = ref(db, "rooms/" + ROOM);
+    const playerRef = ref(db, "rooms/" + ROOM + "/players/" + ME);
+
+    // Remove player on disconnect; if room becomes empty, remove the room too
+    onDisconnect(playerRef).remove();
+
+    async function leaveRoom() {
+      await remove(playerRef);
+      const snap = await get(ref(db, "rooms/" + ROOM + "/players"));
+      if (!snap.exists() || Object.keys(snap.val()).length === 0) {
+        await remove(roomRef);
+      }
+    }
+
+    document.getElementById("exitBtn").addEventListener("click", async e => {
+      e.preventDefault();
+      await leaveRoom();
+      window.location.href = "tabu.html";
+    });
 
     // ── i18n ──────────────────────────────────────────────────────────────────
     const T = {

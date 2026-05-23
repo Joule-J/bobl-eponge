@@ -154,7 +154,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
-    import { getDatabase, ref, set, get, update, onValue, child, push } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+    import { getDatabase, ref, set, get, update, onValue, child, push, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCx6NrESFkyL87PrdrVPxOp0OcsBlxF9ys",
@@ -369,17 +369,35 @@
     document.getElementById("joinCode").addEventListener("input", e => { e.target.value = e.target.value.toUpperCase(); });
 
     // ── Lobby ─────────────────────────────────────────────────────────────────
-    function enterLobby(code, name) {
+    async function enterLobby(code, name) {
       document.getElementById("stepEntry").classList.add("hidden");
       document.getElementById("stepLobby").classList.remove("hidden");
       document.getElementById("lobbyCode").textContent = code;
       roomRef = ref(db, "rooms/" + code);
+
+      // On disconnect: remove this player; if room becomes empty, remove room
+      const myPlayerRef = ref(db, "rooms/" + code + "/players/" + myPlayerId);
+      onDisconnect(myPlayerRef).remove();
+
       listenLobby();
+    }
+
+    async function cleanupIfEmpty(code) {
+      const snap = await get(ref(db, "rooms/" + code + "/players"));
+      if (!snap.exists() || Object.keys(snap.val()).length === 0) {
+        await remove(ref(db, "rooms/" + code));
+      }
     }
 
     function listenLobby() {
       onValue(roomRef, snap => {
-        if (!snap.exists()) return;
+        if (!snap.exists()) {
+          // Room was deleted (everyone left); go back to entry
+          document.getElementById("stepLobby").classList.add("hidden");
+          document.getElementById("stepEntry").classList.remove("hidden");
+          roomCode = null; roomRef = null;
+          return;
+        }
         const room = snap.val();
 
         // If game started, go to game page
