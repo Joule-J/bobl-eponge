@@ -626,6 +626,59 @@
   gap: 8px;
 }
 
+/* ── Open rooms list ──────────────────────────────────────────────────────── */
+.lobby-open-rooms {
+  width: 100%;
+  max-width: 420px;
+}
+
+.open-rooms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.open-room-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(249, 237, 91, 0.94);
+  border: 3px solid rgba(32,20,7,0.14);
+  box-shadow: 4px 4px 0 rgba(32,20,7,0.10);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.open-room-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.open-room-code {
+  font-family: "Bangers", sans-serif;
+  font-size: 1.3rem;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+}
+
+.open-room-meta {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(32,20,7,0.55);
+  letter-spacing: 0.04em;
+}
+
+.open-rooms-empty {
+  font-size: 0.85rem;
+  color: rgba(32,20,7,0.5);
+  padding: 8px 0;
+  text-align: center;
+}
+
 /* ── Announcer 3-column layout ────────────────────────────────────────────── */
 .announcer-layout {
   display: grid;

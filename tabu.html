@@ -85,6 +85,12 @@
         <div class="lobby-error hidden" id="joinError"></div>
       </div>
 
+      <!-- Open rooms list -->
+      <div class="lobby-open-rooms" id="openRoomsSection" style="display:none">
+        <div class="lobby-card-title" data-i18n="open_rooms_title">Salles ouvertes</div>
+        <div id="openRoomsList" class="open-rooms-list"></div>
+      </div>
+
     </div>
 
     <!-- STEP 2: Team lobby (shown after joining) -->
@@ -184,6 +190,12 @@
         need_team: "Rejoins une équipe d'abord.",
         need_players: "Il faut au moins 1 joueur par équipe.",
         need_two_players: "Il faut au moins 2 joueurs pour démarrer.",
+        open_rooms_title: "Salles ouvertes",
+        open_rooms_empty: "Aucune salle ouverte pour l'instant.",
+        open_room_join: "Rejoindre",
+        open_room_players: "joueur(s)",
+        open_room_free: "Free",
+        open_room_team: "Équipes",
       },
       en: {
         back: "← Back", create_title: "Create a room",
@@ -205,6 +217,12 @@
         need_team: "Join a team first.",
         need_players: "Need at least 1 player per team.",
         need_two_players: "Need at least 2 players to start.",
+        open_rooms_title: "Open rooms",
+        open_rooms_empty: "No open rooms right now.",
+        open_room_join: "Join",
+        open_room_players: "player(s)",
+        open_room_free: "Free",
+        open_room_team: "Teams",
       },
     };
 
@@ -220,6 +238,36 @@
       btn.addEventListener("click", () => { lang = btn.dataset.lang; localStorage.setItem("poseLang", lang); applyTranslations(); });
     });
     applyTranslations();
+
+    // ── Open rooms live list ──────────────────────────────────────────────────
+    onValue(ref(db, "rooms"), snap => {
+      const section = document.getElementById("openRoomsSection");
+      const list    = document.getElementById("openRoomsList");
+      if (!snap.exists()) { section.style.display = "none"; return; }
+      const rooms = snap.val();
+      const open  = Object.entries(rooms).filter(([, r]) => r.status === "waiting" || r.status === "lobby");
+      if (open.length === 0) { section.style.display = "none"; return; }
+      section.style.display = "block";
+      list.innerHTML = open.map(([code, r]) => {
+        const playerCount = r.players ? Object.keys(r.players).length : 0;
+        const modeLabel   = r.game_mode === "team" ? t("open_room_team") : t("open_room_free");
+        const catLabel    = r.category  === "spongebob" ? t("cat_spongebob") : r.category === "statues" ? t("cat_statues") : t("cat_mix");
+        return `<div class="open-room-row">
+          <div class="open-room-info">
+            <span class="open-room-code">${code}</span>
+            <span class="open-room-meta">${catLabel} · ${modeLabel} · ${playerCount} ${t("open_room_players")}</span>
+          </div>
+          <button class="btn btn-secondary open-room-join-btn" data-code="${code}" data-i18n-btn="open_room_join">${t("open_room_join")}</button>
+        </div>`;
+      }).join("") || `<div class="open-rooms-empty">${t("open_rooms_empty")}</div>`;
+
+      list.querySelectorAll(".open-room-join-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.getElementById("joinCode").value = btn.dataset.code;
+          document.getElementById("joinName").focus();
+        });
+      });
+    });
 
     // ── State ─────────────────────────────────────────────────────────────────
     const LABELS = {

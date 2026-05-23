@@ -138,7 +138,10 @@
               <span class="stage-eyebrow" data-i18n="eyebrow_camera">Caméra</span>
               <span class="stage-title" data-i18n="title_pose">Fais la pose !</span>
             </div>
-            <div id="guesserSuccessBadge" class="badge badge-success hidden" data-i18n="badge_success">✓ Réussi !</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div id="guesserSuccessBadge" class="badge badge-success hidden" data-i18n="badge_success">✓ Réussi !</div>
+              <button class="btn btn-secondary" id="skipGueBtn" data-i18n="btn_skip">Passer</button>
+            </div>
           </div>
           <div class="video-wrap">
             <canvas id="guesserCanvas" class="pose-canvas"></canvas>
@@ -534,7 +537,8 @@
     document.getElementById("confirmWrong").addEventListener("click", () => resolveWrong(true));
     document.getElementById("denyWrong").addEventListener("click",    () => resolveWrong(false));
     document.getElementById("specWrongBtn").addEventListener("click", sendWrongRequest);
-    document.getElementById("skipAnnBtn").addEventListener("click",   () => { if (!isTransitioning) { isTransitioning = true; completeLevel("skipped"); } });
+    document.getElementById("skipAnnBtn").addEventListener("click", () => { if (!isTransitioning) { isTransitioning = true; completeLevel("skipped"); } });
+    document.getElementById("skipGueBtn").addEventListener("click", () => { if (!isTransitioning) { isTransitioning = true; completeLevel("skipped"); } });
 
     // ── Show/hide screens ─────────────────────────────────────────────────────
     function showScreen(id) {
