@@ -1,3 +1,9 @@
+/* ── Tabu pages: allow scroll ────────────────────────────────────────────── */
+body:has(.tabu-lobby) {
+  height: auto;
+  overflow-y: auto;
+}
+
 /* ── Tabu lobby ───────────────────────────────────────────────────────────── */
 .tabu-lobby {
   min-height: 100vh;
