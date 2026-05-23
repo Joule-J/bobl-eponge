@@ -15,25 +15,32 @@
 
     <div class="lobby-brand">
       <span class="lobby-title">Pose Tabu</span>
-      <a class="lobby-back" href="index.html">← Retour</a>
+      <div style="display:flex;align-items:center;gap:12px">
+        <a class="lobby-back" href="index.html" data-i18n="back">← Retour</a>
+        <!-- Language toggle -->
+        <div class="lobby-lang-toggle">
+          <button class="lang-pill active" data-lang="fr">FR</button>
+          <button class="lang-pill" data-lang="en">EN</button>
+        </div>
+      </div>
     </div>
 
     <!-- CREATE ROOM -->
     <div class="lobby-card" id="createCard">
-      <div class="lobby-card-title">Créer une salle</div>
-      <div class="lobby-card-desc">Tu seras l'<strong>Annonciateur</strong> — tu vois la pose, l'autre doit la deviner.</div>
+      <div class="lobby-card-title" data-i18n="create_title">Créer une salle</div>
+      <div class="lobby-card-desc" data-i18n="create_desc">Tu seras l'<strong>Annonciateur</strong> — tu vois la pose, l'autre doit la deviner.</div>
 
       <div class="lobby-field">
-        <label class="lobby-label">Catégorie</label>
+        <label class="lobby-label" data-i18n="label_category">Catégorie</label>
         <select class="lobby-select" id="createCategory">
           <option value="spongebob">Bob L'éponge</option>
-          <option value="statues">Statues</option>
+          <option value="statues" data-i18n-opt="cat_statues">Statues</option>
           <option value="mix">Mix</option>
         </select>
       </div>
 
       <div class="lobby-field">
-        <label class="lobby-label">Nombre de niveaux</label>
+        <label class="lobby-label" data-i18n="label_levels">Nombre de niveaux</label>
         <select class="lobby-select" id="createLevels">
           <option value="5">5</option>
           <option value="10" selected>10</option>
@@ -41,23 +48,23 @@
         </select>
       </div>
 
-      <button class="btn btn-primary btn-lobby" id="createBtn">Créer la salle</button>
+      <button class="btn btn-primary btn-lobby" id="createBtn" data-i18n="btn_create">Créer la salle</button>
     </div>
 
-    <div class="lobby-or">ou</div>
+    <div class="lobby-or" data-i18n="or">ou</div>
 
     <!-- JOIN ROOM -->
     <div class="lobby-card" id="joinCard">
-      <div class="lobby-card-title">Rejoindre une salle</div>
-      <div class="lobby-card-desc">Tu seras le <strong>Devineur</strong> — fais la pose avec ta caméra.</div>
+      <div class="lobby-card-title" data-i18n="join_title">Rejoindre une salle</div>
+      <div class="lobby-card-desc" data-i18n="join_desc">Tu seras le <strong>Devineur</strong> — fais la pose avec ta caméra.</div>
 
       <div class="lobby-field">
-        <label class="lobby-label">Code de la salle</label>
+        <label class="lobby-label" data-i18n="label_code">Code de la salle</label>
         <input class="lobby-input" id="joinCode" type="text" maxlength="6" placeholder="Ex: XK7F2M" autocomplete="off" />
       </div>
 
-      <button class="btn btn-primary btn-lobby" id="joinBtn">Rejoindre</button>
-      <div class="lobby-error hidden" id="joinError">Salle introuvable.</div>
+      <button class="btn btn-primary btn-lobby" id="joinBtn" data-i18n="btn_join">Rejoindre</button>
+      <div class="lobby-error hidden" id="joinError"></div>
     </div>
 
   </div>
@@ -79,6 +86,78 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
+    // ── i18n ─────────────────────────────────────────────────────────────────
+    const T = {
+      fr: {
+        back:          "← Retour",
+        create_title:  "Créer une salle",
+        create_desc:   "Tu seras l'<strong>Annonciateur</strong> — tu vois la pose, l'autre doit la deviner.",
+        label_category:"Catégorie",
+        label_levels:  "Nombre de niveaux",
+        btn_create:    "Créer la salle",
+        btn_creating:  "Création…",
+        or:            "ou",
+        join_title:    "Rejoindre une salle",
+        join_desc:     "Tu seras le <strong>Devineur</strong> — fais la pose avec ta caméra.",
+        label_code:    "Code de la salle",
+        btn_join:      "Rejoindre",
+        err_code:      "Entrez un code valide.",
+        err_notfound:  "Salle introuvable.",
+        err_finished:  "Cette salle est terminée.",
+        err_noposes:   "Cette catégorie n'a pas encore de poses. Choisissez Bob L'éponge ou Mix.",
+        cat_statues:   "Statues",
+      },
+      en: {
+        back:          "← Back",
+        create_title:  "Create a room",
+        create_desc:   "You'll be the <strong>Announcer</strong> — you see the pose, the other must guess it.",
+        label_category:"Category",
+        label_levels:  "Number of levels",
+        btn_create:    "Create room",
+        btn_creating:  "Creating…",
+        or:            "or",
+        join_title:    "Join a room",
+        join_desc:     "You'll be the <strong>Guesser</strong> — strike the pose with your camera.",
+        label_code:    "Room code",
+        btn_join:      "Join",
+        err_code:      "Enter a valid code.",
+        err_notfound:  "Room not found.",
+        err_finished:  "This room is already finished.",
+        err_noposes:   "This category has no poses yet. Choose Bob L'éponge or Mix.",
+        cat_statues:   "Statues",
+      },
+    };
+
+    let lang = localStorage.getItem("poseLang") || "fr";
+
+    function t(key) { return (T[lang] || T.fr)[key] || key; }
+
+    function applyTranslations() {
+      document.documentElement.lang = lang;
+      document.querySelectorAll("[data-i18n]").forEach(el => {
+        el.innerHTML = t(el.dataset.i18n);
+      });
+      // select options
+      document.querySelectorAll("[data-i18n-opt]").forEach(el => {
+        el.textContent = t(el.dataset.i18nOpt);
+      });
+      // lang pills
+      document.querySelectorAll(".lang-pill").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.lang === lang);
+      });
+    }
+
+    document.querySelectorAll(".lang-pill").forEach(btn => {
+      btn.addEventListener("click", () => {
+        lang = btn.dataset.lang;
+        localStorage.setItem("poseLang", lang);
+        applyTranslations();
+      });
+    });
+
+    applyTranslations();
+
+    // ── Firebase logic ────────────────────────────────────────────────────────
     function randomCode() {
       return Math.random().toString(36).substring(2, 8).toUpperCase();
     }
@@ -96,8 +175,7 @@
         ...LABELS.spongebob.map(l => ({ label: l, cat: "spongebob" })),
         ...LABELS.statues.map(l => ({ label: l, cat: "statues" })),
       ];
-      const shuffled = pool.sort(() => Math.random() - 0.5);
-      return shuffled.slice(0, Math.min(count, shuffled.length));
+      return pool.sort(() => Math.random() - 0.5).slice(0, Math.min(count, pool.length));
     }
 
     document.getElementById("createBtn").addEventListener("click", async () => {
@@ -108,11 +186,11 @@
       const queue    = getQueue(category, levels);
 
       if (queue.length === 0) {
-        alert("Cette catégorie n'a pas encore de poses. Choisissez Bob L'éponge ou Mix.");
+        alert(t("err_noposes"));
         return;
       }
 
-      btn.textContent = "Création…";
+      btn.textContent = t("btn_creating");
       btn.disabled = true;
 
       await set(ref(db, "rooms/" + code), {
@@ -120,7 +198,7 @@
         status:        "waiting",
         current_level: 0,
         score:         0,
-        queue:         queue,
+        queue,
         results:       [],
         created_at:    Date.now(),
       });
@@ -129,26 +207,25 @@
     });
 
     document.getElementById("joinBtn").addEventListener("click", async () => {
-      const code = document.getElementById("joinCode").value.trim().toUpperCase();
+      const code  = document.getElementById("joinCode").value.trim().toUpperCase();
       const errEl = document.getElementById("joinError");
       errEl.classList.add("hidden");
 
       if (code.length < 4) {
-        errEl.textContent = "Entrez un code valide.";
+        errEl.textContent = t("err_code");
         errEl.classList.remove("hidden");
         return;
       }
 
       const snap = await get(child(ref(db), "rooms/" + code));
       if (!snap.exists()) {
-        errEl.textContent = "Salle introuvable.";
+        errEl.textContent = t("err_notfound");
         errEl.classList.remove("hidden");
         return;
       }
 
-      const room = snap.val();
-      if (room.status === "finished") {
-        errEl.textContent = "Cette salle est terminée.";
+      if (snap.val().status === "finished") {
+        errEl.textContent = t("err_finished");
         errEl.classList.remove("hidden");
         return;
       }

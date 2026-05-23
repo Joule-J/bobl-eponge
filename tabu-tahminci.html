@@ -15,12 +15,16 @@
 
     <div class="topbar">
       <div class="topbar-modes">
-        <span class="tabu-role-badge tahminci">🎯 Devineur</span>
+        <span class="tabu-role-badge tahminci" id="roleLabel">🎯 Devineur</span>
       </div>
       <div class="topbar-brand">
         <span class="topbar-title">Pose Tabu</span>
       </div>
-      <div class="topbar-controls">
+      <div class="topbar-controls" style="display:flex;align-items:center;gap:12px">
+        <div class="lobby-lang-toggle">
+          <button class="lang-pill" data-lang="fr">FR</button>
+          <button class="lang-pill" data-lang="en">EN</button>
+        </div>
         <span class="tabu-room-code" id="roomCodeDisplay">—</span>
       </div>
     </div>
@@ -31,8 +35,8 @@
       <section id="waitingScreen" class="tabu-full-screen">
         <div class="tabu-wait-card">
           <div class="tabu-wait-icon">⏳</div>
-          <div class="tabu-wait-title">En attente de l'Annonciateur…</div>
-          <div class="tabu-wait-desc">Code de la salle :</div>
+          <div class="tabu-wait-title" data-i18n="wait_title">En attente de l'Annonciateur…</div>
+          <div class="tabu-wait-desc" data-i18n="wait_desc">Code de la salle :</div>
           <div class="tabu-code-big" id="waitCode">—</div>
         </div>
       </section>
@@ -44,10 +48,10 @@
         <div class="stage">
           <div class="stage-header">
             <div class="stage-meta">
-              <span class="stage-eyebrow">Caméra</span>
-              <span class="stage-title">Fais la pose !</span>
+              <span class="stage-eyebrow" data-i18n="eyebrow_camera">Caméra</span>
+              <span class="stage-title" data-i18n="title_pose">Fais la pose !</span>
             </div>
-            <div id="tahminciSuccessBadge" class="badge badge-success hidden">✓ Réussi !</div>
+            <div id="tahminciSuccessBadge" class="badge badge-success hidden" data-i18n="badge_success">✓ Réussi !</div>
           </div>
           <div class="video-wrap">
             <canvas id="tahminciCanvas" class="pose-canvas"></canvas>
@@ -59,22 +63,22 @@
         <div class="stage">
           <div class="stage-header">
             <div class="stage-meta">
-              <span class="stage-eyebrow">Tableau de bord</span>
-              <span class="stage-title">Progression</span>
+              <span class="stage-eyebrow" data-i18n="eyebrow_dashboard">Tableau de bord</span>
+              <span class="stage-title" data-i18n="title_progress">Progression</span>
             </div>
           </div>
           <div class="tabu-score-panel">
             <div class="tabu-score-block">
               <span class="tabu-score-num" id="tahminciScore">0</span>
-              <span class="tabu-score-label">Score</span>
+              <span class="tabu-score-label" data-i18n="label_score">Score</span>
             </div>
             <div class="tabu-score-block">
               <span class="tabu-score-num" id="tahminciLevelNum">1</span>
-              <span class="tabu-score-label">Niveau</span>
+              <span class="tabu-score-label" data-i18n="label_level">Niveau</span>
             </div>
             <div class="tabu-score-block">
               <span class="tabu-score-num" id="tahminciTotal">—</span>
-              <span class="tabu-score-label">Total</span>
+              <span class="tabu-score-label" data-i18n="label_total">Total</span>
             </div>
           </div>
           <div class="guess-progress" id="tahminciProgress" style="padding:16px 18px;gap:10px;flex-wrap:wrap;"></div>
@@ -86,12 +90,12 @@
       <section id="finishedScreen" class="tabu-full-screen" style="display:none">
         <div class="tabu-wait-card">
           <div class="tabu-wait-icon">🎉</div>
-          <div class="tabu-wait-title">Partie terminée !</div>
+          <div class="tabu-wait-title" data-i18n="finished_title">Partie terminée !</div>
           <div class="tabu-final-score">
             <span id="tahminciFinal">0</span><span class="tabu-final-total" id="tahminciTotal2">/10</span>
           </div>
           <div class="results-dots" id="tahminciDots"></div>
-          <a class="btn btn-primary results-restart" href="tabu.html">↺ Nouvelle partie</a>
+          <a class="btn btn-primary results-restart" href="tabu.html" data-i18n="btn_newgame">↺ Nouvelle partie</a>
         </div>
       </section>
 
@@ -123,6 +127,68 @@
     if (!ROOM) { window.location.href = "tabu.html"; }
 
     const roomRef = ref(db, "rooms/" + ROOM);
+
+    // ── i18n ─────────────────────────────────────────────────────────────────
+    const T = {
+      fr: {
+        role:              "🎯 Devineur",
+        wait_title:        "En attente de l'Annonciateur…",
+        wait_desc:         "Code de la salle :",
+        eyebrow_camera:    "Caméra",
+        title_pose:        "Fais la pose !",
+        badge_success:     "✓ Réussi !",
+        eyebrow_dashboard: "Tableau de bord",
+        title_progress:    "Progression",
+        label_score:       "Score",
+        label_level:       "Niveau",
+        label_total:       "Total",
+        finished_title:    "Partie terminée !",
+        btn_newgame:       "↺ Nouvelle partie",
+        hint_hold:         " — tiens la pose !",
+        hint_closer:       "Plus proche : ",
+      },
+      en: {
+        role:              "🎯 Guesser",
+        wait_title:        "Waiting for the Announcer…",
+        wait_desc:         "Room code:",
+        eyebrow_camera:    "Camera",
+        title_pose:        "Strike the pose!",
+        badge_success:     "✓ Done!",
+        eyebrow_dashboard: "Dashboard",
+        title_progress:    "Progress",
+        label_score:       "Score",
+        label_level:       "Level",
+        label_total:       "Total",
+        finished_title:    "Game over!",
+        btn_newgame:       "↺ New game",
+        hint_hold:         " — hold the pose!",
+        hint_closer:       "Closest: ",
+      },
+    };
+
+    let lang = localStorage.getItem("poseLang") || "fr";
+
+    function t(key) { return (T[lang] || T.fr)[key] || key; }
+
+    function applyTranslations() {
+      document.documentElement.lang = lang;
+      document.querySelectorAll("[data-i18n]").forEach(el => {
+        el.textContent = t(el.dataset.i18n);
+      });
+      document.querySelectorAll(".lang-pill").forEach(b => {
+        b.classList.toggle("active", b.dataset.lang === lang);
+      });
+    }
+
+    document.querySelectorAll(".lang-pill").forEach(btn => {
+      btn.addEventListener("click", () => {
+        lang = btn.dataset.lang;
+        localStorage.setItem("poseLang", lang);
+        applyTranslations();
+      });
+    });
+
+    applyTranslations();
 
     document.getElementById("roomCodeDisplay").textContent = ROOM;
     document.getElementById("waitCode").textContent        = ROOM;
@@ -196,8 +262,8 @@
       const hintsEl = document.getElementById("tahminciHints");
       const name = (topLabel || "—").replace(/_/g, " ");
       hintsEl.innerHTML = matched
-        ? '<span class="hint-chip">' + name + " — tiens la pose !</span>"
-        : '<span class="hint-chip">Plus proche : ' + name + " (" + (topProb * 100).toFixed(0) + "%)</span>";
+        ? '<span class="hint-chip">' + name + t("hint_hold") + "</span>"
+        : '<span class="hint-chip">' + t("hint_closer") + name + " (" + (topProb * 100).toFixed(0) + "%)</span>";
 
       // Tell host guesser is trying
       if (!isTransitioning) {

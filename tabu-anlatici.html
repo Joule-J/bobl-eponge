@@ -15,12 +15,16 @@
 
     <div class="topbar">
       <div class="topbar-modes">
-        <span class="tabu-role-badge anlatici">👁 Annonciateur</span>
+        <span class="tabu-role-badge anlatici" id="roleLabel">👁 Annonciateur</span>
       </div>
       <div class="topbar-brand">
         <span class="topbar-title">Pose Tabu</span>
       </div>
-      <div class="topbar-controls">
+      <div class="topbar-controls" style="display:flex;align-items:center;gap:12px">
+        <div class="lobby-lang-toggle">
+          <button class="lang-pill" data-lang="fr">FR</button>
+          <button class="lang-pill" data-lang="en">EN</button>
+        </div>
         <span class="tabu-room-code" id="roomCodeDisplay">—</span>
       </div>
     </div>
@@ -31,8 +35,8 @@
       <section id="waitingScreen" class="tabu-full-screen">
         <div class="tabu-wait-card">
           <div class="tabu-wait-icon">⏳</div>
-          <div class="tabu-wait-title">En attente du Devineur…</div>
-          <div class="tabu-wait-desc">Partage ce code avec ton partenaire :</div>
+          <div class="tabu-wait-title" data-i18n="wait_title">En attente du Devineur…</div>
+          <div class="tabu-wait-desc" data-i18n="wait_desc">Partage ce code avec ton partenaire :</div>
           <div class="tabu-code-big" id="waitCode">—</div>
           <div class="tabu-wait-desc" style="font-size:0.8rem;opacity:0.6">URL : <span id="waitUrl"></span></div>
         </div>
@@ -45,12 +49,12 @@
         <div class="stage">
           <div class="stage-header">
             <div class="stage-meta">
-              <span class="stage-eyebrow">Pose cible</span>
+              <span class="stage-eyebrow" data-i18n="eyebrow_target">Pose cible</span>
               <span class="stage-title" id="anlaticiLevelTitle">Niveau 1</span>
             </div>
             <div class="level-indicator">
               <div class="guess-progress" id="anlaticiProgress"></div>
-              <button class="btn btn-secondary" id="skipAnlatici">Passer</button>
+              <button class="btn btn-secondary" id="skipAnlatici" data-i18n="btn_skip">Passer</button>
             </div>
           </div>
           <div class="meme-wrap">
@@ -66,25 +70,25 @@
         <div class="stage">
           <div class="stage-header">
             <div class="stage-meta">
-              <span class="stage-eyebrow">Tableau de bord</span>
-              <span class="stage-title">Progression</span>
+              <span class="stage-eyebrow" data-i18n="eyebrow_dashboard">Tableau de bord</span>
+              <span class="stage-title" data-i18n="title_progress">Progression</span>
             </div>
           </div>
           <div class="tabu-score-panel">
             <div class="tabu-score-block">
               <span class="tabu-score-num" id="anlaticiScore">0</span>
-              <span class="tabu-score-label">Score</span>
+              <span class="tabu-score-label" data-i18n="label_score">Score</span>
             </div>
             <div class="tabu-score-block">
               <span class="tabu-score-num" id="anlaticiLevelNum">1</span>
-              <span class="tabu-score-label">Niveau</span>
+              <span class="tabu-score-label" data-i18n="label_level">Niveau</span>
             </div>
             <div class="tabu-score-block">
               <span class="tabu-score-num" id="anlaticiTotal">—</span>
-              <span class="tabu-score-label">Total</span>
+              <span class="tabu-score-label" data-i18n="label_total">Total</span>
             </div>
           </div>
-          <div class="tabu-status-bar" id="anlaticiStatus">
+          <div class="tabu-status-bar" id="anlaticiStatus" data-i18n="status_waiting">
             En attente de la pose…
           </div>
         </div>
@@ -95,12 +99,12 @@
       <section id="finishedScreen" class="tabu-full-screen" style="display:none">
         <div class="tabu-wait-card">
           <div class="tabu-wait-icon">🎉</div>
-          <div class="tabu-wait-title">Partie terminée !</div>
+          <div class="tabu-wait-title" data-i18n="finished_title">Partie terminée !</div>
           <div class="tabu-final-score">
             <span id="finalScore">0</span><span class="tabu-final-total" id="finalTotal">/10</span>
           </div>
           <div class="results-dots" id="anlaticiDots"></div>
-          <a class="btn btn-primary results-restart" href="tabu.html">↺ Nouvelle partie</a>
+          <a class="btn btn-primary results-restart" href="tabu.html" data-i18n="btn_newgame">↺ Nouvelle partie</a>
         </div>
       </section>
 
@@ -125,6 +129,72 @@
     const db     = getDatabase(app);
     const params = new URLSearchParams(window.location.search);
     const ROOM   = params.get("room");
+
+    // ── i18n ─────────────────────────────────────────────────────────────────
+    const T = {
+      fr: {
+        role:              "👁 Annonciateur",
+        wait_title:        "En attente du Devineur…",
+        wait_desc:         "Partage ce code avec ton partenaire :",
+        eyebrow_target:    "Pose cible",
+        btn_skip:          "Passer",
+        eyebrow_dashboard: "Tableau de bord",
+        title_progress:    "Progression",
+        label_score:       "Score",
+        label_level:       "Niveau",
+        label_total:       "Total",
+        status_waiting:    "En attente de la pose…",
+        status_matched:    "✓ Pose réussie !",
+        status_trying:     "⏱ En train d'essayer…",
+        finished_title:    "Partie terminée !",
+        btn_newgame:       "↺ Nouvelle partie",
+        level_prefix:      "Niveau ",
+        cat_statues:       "Statues",
+      },
+      en: {
+        role:              "👁 Announcer",
+        wait_title:        "Waiting for the Guesser…",
+        wait_desc:         "Share this code with your partner:",
+        eyebrow_target:    "Target pose",
+        btn_skip:          "Skip",
+        eyebrow_dashboard: "Dashboard",
+        title_progress:    "Progress",
+        label_score:       "Score",
+        label_level:       "Level",
+        label_total:       "Total",
+        status_waiting:    "Waiting for a pose…",
+        status_matched:    "✓ Pose matched!",
+        status_trying:     "⏱ Trying…",
+        finished_title:    "Game over!",
+        btn_newgame:       "↺ New game",
+        level_prefix:      "Level ",
+        cat_statues:       "Statues",
+      },
+    };
+
+    let lang = localStorage.getItem("poseLang") || "fr";
+
+    function t(key) { return (T[lang] || T.fr)[key] || key; }
+
+    function applyTranslations() {
+      document.documentElement.lang = lang;
+      document.querySelectorAll("[data-i18n]").forEach(el => {
+        el.textContent = t(el.dataset.i18n);
+      });
+      document.querySelectorAll(".lang-pill").forEach(b => {
+        b.classList.toggle("active", b.dataset.lang === lang);
+      });
+    }
+
+    document.querySelectorAll(".lang-pill").forEach(btn => {
+      btn.addEventListener("click", () => {
+        lang = btn.dataset.lang;
+        localStorage.setItem("poseLang", lang);
+        applyTranslations();
+      });
+    });
+
+    applyTranslations();
 
     if (!ROOM) { window.location.href = "tabu.html"; }
 
@@ -192,21 +262,21 @@
         document.getElementById("anlaticiTargetImage").src           = photoPath(item.cat, item.label);
         document.getElementById("anlaticiLabelBar").style.display    = "flex";
         document.getElementById("anlaticiMemeLabel").textContent     = item.label.replace(/_/g, " ");
-        document.getElementById("anlaticiCatTag").textContent        = item.cat === "spongebob" ? "Bob L'éponge" : "Statues";
-        document.getElementById("anlaticiLevelTitle").textContent    = "Niveau " + (level + 1);
+        document.getElementById("anlaticiCatTag").textContent        = item.cat === "spongebob" ? "Bob L'éponge" : t("cat_statues");
+        document.getElementById("anlaticiLevelTitle").textContent    = t("level_prefix") + (level + 1);
       }
 
       // Status from guesser
       const status = room.guesser_status || "";
       const statusEl = document.getElementById("anlaticiStatus");
       if (status === "matched") {
-        statusEl.textContent = "✓ Pose réussie !";
+        statusEl.textContent = t("status_matched");
         statusEl.className   = "tabu-status-bar status-ok";
       } else if (status === "trying") {
-        statusEl.textContent = "⏱ En train d'essayer…";
+        statusEl.textContent = t("status_trying");
         statusEl.className   = "tabu-status-bar status-trying";
       } else {
-        statusEl.textContent = "En attente de la pose…";
+        statusEl.textContent = t("status_waiting");
         statusEl.className   = "tabu-status-bar";
       }
     });
