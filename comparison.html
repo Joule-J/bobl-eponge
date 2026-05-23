@@ -16,7 +16,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       gap: 20px;
       padding: 40px 24px 60px;
       background:
@@ -32,6 +32,17 @@
       text-shadow: 3px 3px 0 rgba(32,20,7,0.15);
       text-align: center;
     }
+
+    .comp-back-link {
+      align-self: flex-start;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--ink);
+      text-decoration: none;
+      opacity: 0.6;
+      padding: 6px 0;
+    }
+    .comp-back-link:hover { opacity: 1; }
 
     .comp-card {
       background: rgba(249,237,91,0.94);
@@ -87,6 +98,65 @@
       color: #e53636;
     }
 
+    /* ── Open rooms list ── */
+    .comp-open-rooms {
+      background: rgba(249,237,91,0.94);
+      border: 4px solid rgba(32,20,7,0.14);
+      box-shadow: 8px 8px 0 rgba(32,20,7,0.12);
+      padding: 22px 28px;
+      width: 100%;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-sizing: border-box;
+    }
+
+    .comp-open-rooms-empty {
+      font-size: 0.82rem;
+      color: rgba(32,20,7,0.45);
+      font-weight: 700;
+      text-align: center;
+      padding: 8px 0;
+    }
+
+    .comp-open-room-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      background: rgba(32,20,7,0.06);
+      border-radius: 8px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.15s;
+    }
+    .comp-open-room-row:hover { border-color: var(--blue); }
+
+    .comp-open-room-code {
+      font-family: "Bangers", sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 0.12em;
+      color: var(--blue);
+    }
+
+    .comp-open-room-host {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: rgba(32,20,7,0.6);
+    }
+
+    .comp-open-room-join {
+      font-size: 0.72rem;
+      font-weight: 900;
+      color: #fff;
+      background: var(--blue);
+      padding: 4px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+
     /* ── Waiting room ── */
     .comp-waiting {
       background: rgba(249,237,91,0.94);
@@ -131,7 +201,6 @@
       display: none;
       width: 100%;
       height: 100vh;
-      display: none;
       flex-direction: column;
     }
 
@@ -152,15 +221,17 @@
       letter-spacing: 0.08em;
     }
 
+    /* ── Arena: 3 cols ── */
     .comp-arena {
       display: grid;
-      grid-template-columns: 1fr 320px 1fr;
+      grid-template-columns: 1fr 300px 1fr;
       gap: 0;
       flex: 1;
       min-height: 0;
       overflow: hidden;
     }
 
+    /* ── Player panel: camera + orb track side by side ── */
     .comp-player-panel {
       display: flex;
       flex-direction: column;
@@ -195,11 +266,20 @@
       color: var(--blue);
     }
 
+    /* camera + orbs row */
+    .comp-panel-body {
+      display: flex;
+      flex-direction: row;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
     .comp-camera-wrap {
       flex: 1;
       position: relative;
       overflow: hidden;
-      background: #000;
+      background: #111;
     }
 
     .comp-canvas {
@@ -222,13 +302,59 @@
       border-radius: 20px;
       opacity: 0;
       transition: opacity 0.2s;
+      white-space: nowrap;
     }
 
     .comp-success-badge.show { opacity: 1; }
 
+    /* ── Orb track ── */
+    .comp-orb-track {
+      width: 36px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 0;
+      background: rgba(32,20,7,0.05);
+      border-left: 2px solid rgba(32,20,7,0.08);
+    }
+
+    .right-panel .comp-orb-track {
+      border-left: none;
+      border-right: 2px solid rgba(32,20,7,0.08);
+      order: -1;
+    }
+
+    .comp-orb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(32,20,7,0.12);
+      border: 2px solid rgba(32,20,7,0.18);
+      transition: background 0.3s, border-color 0.3s, transform 0.2s;
+    }
+
+    .comp-orb.done {
+      background: #2eaa6e;
+      border-color: #1e8a56;
+    }
+
+    .comp-orb.current {
+      background: var(--blue);
+      border-color: #1a7acc;
+      animation: orb-pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes orb-pulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(42,130,255,0.4); }
+      50% { transform: scale(1.25); box-shadow: 0 0 0 5px rgba(42,130,255,0); }
+    }
+
     .comp-hints {
-      padding: 8px 12px;
-      min-height: 36px;
+      padding: 6px 10px;
+      min-height: 32px;
       flex-shrink: 0;
       display: flex;
       gap: 6px;
@@ -243,7 +369,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 12px;
+      gap: 14px;
       padding: 16px 12px;
       background: var(--panel-yellow);
       border-left: 3px solid rgba(32,20,7,0.10);
@@ -252,7 +378,7 @@
 
     .comp-target-img {
       width: 100%;
-      max-width: 280px;
+      max-width: 260px;
       aspect-ratio: 1/1;
       object-fit: contain;
       border-radius: 10px;
@@ -264,54 +390,6 @@
       font-family: "Bangers", sans-serif;
       font-size: 1.3rem;
       letter-spacing: 0.08em;
-      color: var(--ink);
-    }
-
-    .comp-progress-track {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      width: 100%;
-    }
-
-    .comp-progress-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.72rem;
-      font-weight: 800;
-    }
-
-    .comp-progress-name {
-      width: 60px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      color: rgba(32,20,7,0.6);
-    }
-
-    .comp-progress-bar-wrap {
-      flex: 1;
-      height: 8px;
-      background: rgba(32,20,7,0.10);
-      border-radius: 4px;
-      overflow: hidden;
-    }
-
-    .comp-progress-bar {
-      height: 100%;
-      background: var(--blue);
-      border-radius: 4px;
-      transition: width 0.4s;
-    }
-
-    .comp-progress-bar.me { background: #2eaa6e; }
-
-    .comp-progress-num {
-      width: 24px;
-      text-align: right;
-      font-size: 0.75rem;
-      font-weight: 900;
       color: var(--ink);
     }
 
@@ -380,7 +458,7 @@
       .comp-arena { grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
       .comp-player-panel { max-height: 40vh; }
       .comp-center { padding: 10px; }
-      .comp-target-img { max-width: 160px; }
+      .comp-target-img { max-width: 140px; }
     }
   </style>
 </head>
@@ -388,6 +466,7 @@
 
 <!-- ── LOBBY ── -->
 <div id="lobbyScreen" class="comp-lobby">
+  <a href="index.html" class="comp-back-link">← Geri dön</a>
   <div class="comp-brand">⚡ Poz Yarışması</div>
 
   <div class="comp-card" id="createCard">
@@ -413,6 +492,12 @@
     </div>
     <button class="btn btn-primary btn-lobby" id="joinBtn">Katıl</button>
     <div class="comp-error" id="joinError" style="display:none"></div>
+  </div>
+
+  <!-- Open rooms -->
+  <div class="comp-open-rooms" id="openRoomsSection" style="display:none">
+    <div class="comp-card-title">Açık Odalar</div>
+    <div id="openRoomsList"></div>
   </div>
 </div>
 
@@ -445,18 +530,20 @@
         <span class="comp-panel-name" id="myName">—</span>
         <span class="comp-panel-level" id="myLevelBadge">1 / 10</span>
       </div>
-      <div class="comp-camera-wrap">
-        <canvas id="myCanvas" class="comp-canvas"></canvas>
-        <div class="comp-success-badge" id="mySuccessBadge">✓ Geçildi!</div>
+      <div class="comp-panel-body">
+        <div class="comp-camera-wrap">
+          <canvas id="myCanvas" class="comp-canvas"></canvas>
+          <div class="comp-success-badge" id="mySuccessBadge">✓ Geçildi!</div>
+        </div>
+        <div class="comp-orb-track" id="myOrbTrack"></div>
       </div>
       <div class="comp-hints" id="myHints"></div>
     </div>
 
-    <!-- CENTER: target image + progress -->
+    <!-- CENTER: target image -->
     <div class="comp-center">
       <div class="comp-level-badge" id="centerLevel">Seviye 1</div>
       <img class="comp-target-img" id="targetImg" src="" alt="" />
-      <div class="comp-progress-track" id="progressTrack"></div>
     </div>
 
     <!-- RIGHT: opponent -->
@@ -465,10 +552,13 @@
         <span class="comp-panel-name" id="oppName">—</span>
         <span class="comp-panel-level" id="oppLevelBadge">1 / 10</span>
       </div>
-      <div class="comp-camera-wrap">
-        <img id="oppCanvas" class="comp-remote-img" src="" alt="" style="background:#111" />
+      <div class="comp-panel-body">
+        <div class="comp-orb-track" id="oppOrbTrack"></div>
+        <div class="comp-camera-wrap">
+          <img id="oppCanvas" class="comp-remote-img" src="" alt="" style="background:#111" />
+        </div>
       </div>
-      <div class="comp-hints" id="oppHints" style="min-height:36px"></div>
+      <div class="comp-hints" id="oppHints" style="min-height:32px"></div>
     </div>
 
   </div>
@@ -512,7 +602,8 @@ const LABELS         = ["angry","bıkmış","boring","magara_adami","merhaba","n
 const TOTAL_LEVELS   = 10;
 const MATCH_THRESHOLD = 0.75;
 const HOLD_FRAMES    = 4;
-const FRAME_INTERVAL = 800; // ms between remote frame uploads
+const FRAME_INTERVAL = 800;
+const STALE_MS       = 90000;
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let myId     = sessionStorage.getItem("compPlayerId") || ("c_" + Math.random().toString(36).slice(2, 10));
@@ -531,8 +622,9 @@ let webcam     = null;
 let loopOn     = false;
 let heartbeatTimer = null;
 let frameTimer     = null;
+let openRoomsUnsub = null;
 
-// ── Seeded shuffle (same queue for both players) ──────────────────────────────
+// ── Seeded shuffle ────────────────────────────────────────────────────────────
 function seededShuffle(arr, seed) {
   const a = [...arr];
   let s = seed;
@@ -556,10 +648,64 @@ function show(id, displayType) {
   document.getElementById(id).style.display = displayType || "flex";
 }
 
+// ── Open rooms listener ───────────────────────────────────────────────────────
+function listenOpenRooms() {
+  const roomsRef = ref(db, "comp_rooms");
+  openRoomsUnsub = onValue(roomsRef, snap => {
+    const section = document.getElementById("openRoomsSection");
+    const list    = document.getElementById("openRoomsList");
+
+    if (!snap.exists()) {
+      section.style.display = "none";
+      return;
+    }
+
+    const now   = Date.now();
+    const rooms = snap.val();
+    const open  = [];
+
+    Object.entries(rooms).forEach(([code, room]) => {
+      if (room.status !== "waiting") return;
+      const lastSeen = room.last_seen || room.created_at || 0;
+      if (now - lastSeen > STALE_MS) return;
+      const players  = room.players || {};
+      const ids      = Object.keys(players);
+      if (ids.length >= 2) return;
+      open.push({ code, room, hostName: players[ids[0]]?.name || "?" });
+    });
+
+    section.style.display = open.length > 0 ? "flex" : "none";
+
+    if (open.length === 0) {
+      list.innerHTML = '<div class="comp-open-rooms-empty">Açık oda yok</div>';
+      return;
+    }
+
+    list.innerHTML = open.map(({ code, hostName }) => `
+      <div class="comp-open-room-row" data-code="${code}">
+        <span class="comp-open-room-code">${code}</span>
+        <span class="comp-open-room-host">${hostName}</span>
+        <span class="comp-open-room-join">Katıl</span>
+      </div>
+    `).join("");
+
+    list.querySelectorAll(".comp-open-room-row").forEach(row => {
+      row.addEventListener("click", () => {
+        const code = row.dataset.code;
+        document.getElementById("joinCode").value = code;
+        document.getElementById("joinCode").scrollIntoView({ behavior: "smooth" });
+        document.getElementById("joinName").focus();
+      });
+    });
+  });
+}
+
 // ── Lobby ─────────────────────────────────────────────────────────────────────
 document.getElementById("createBtn").addEventListener("click", async () => {
   const name = document.getElementById("createName").value.trim();
   if (!name) { alert("Adını gir."); return; }
+
+  if (openRoomsUnsub) openRoomsUnsub();
 
   const code = randomCode();
   roomCode   = code;
@@ -595,6 +741,8 @@ document.getElementById("joinBtn").addEventListener("click", async () => {
   if (room.status !== "waiting") { errEl.textContent = "Oda dolu veya oyun başladı."; errEl.style.display = "block"; return; }
   if (room.players && Object.keys(room.players).length >= 2) { errEl.textContent = "Oda dolu."; errEl.style.display = "block"; return; }
 
+  if (openRoomsUnsub) openRoomsUnsub();
+
   roomCode = code;
   isHost   = false;
   roomRef  = ref(db, "comp_rooms/" + code);
@@ -621,18 +769,17 @@ function enterWaiting(code, name) {
   onValue(roomRef, snap => {
     if (!snap.exists()) {
       show("lobbyScreen", "flex");
+      listenOpenRooms();
       return;
     }
     const room    = snap.val();
     const players = room.players || {};
     const ids     = Object.keys(players);
 
-    // Update player chips
     document.getElementById("waitPlayers").innerHTML = ids.map(id =>
-      `<span class="comp-player-chip${ids.length >= 1 ? " ready" : ""}">${players[id].name}</span>`
+      `<span class="comp-player-chip ready">${players[id].name}</span>`
     ).join("");
 
-    // Both players joined → start
     if (ids.length === 2 && room.status === "waiting") {
       if (isHost) {
         update(roomRef, { status: "playing" });
@@ -662,15 +809,14 @@ async function startGame(room, myName) {
   document.getElementById("gameScreen").style.display = "flex";
 
   updateMyLevel(0);
-  renderProgress(players, ids);
+  renderOrbs("myOrbTrack", 0);
+  renderOrbs("oppOrbTrack", 0);
 
-  // Listen for room changes (opponent level, finished)
   onValue(roomRef, snap => {
     if (!snap.exists()) return;
-    const r = snap.val();
+    const r  = snap.val();
     const ps = r.players || {};
 
-    renderProgress(ps, Object.keys(ps));
     updateOppDisplay(ps[oppId]);
 
     if (r.status === "finished") {
@@ -678,28 +824,28 @@ async function startGame(room, myName) {
     }
   });
 
-  // Start camera + model
   await loadModel();
   await startWebcam();
   loopOn = true;
   gameLoop(oppId);
 
-  // Upload frames periodically
   frameTimer = setInterval(() => uploadFrame(), FRAME_INTERVAL);
 }
 
 function updateMyLevel(level) {
   myLevel = level;
   const label = queue[level] || "";
-  document.getElementById("targetImg").src         = photoPath(label);
+  document.getElementById("targetImg").src          = photoPath(label);
   document.getElementById("centerLevel").textContent = "Seviye " + (level + 1);
   document.getElementById("myLevelBadge").textContent = (level + 1) + " / " + TOTAL_LEVELS;
+  renderOrbs("myOrbTrack", level);
 }
 
 function updateOppDisplay(opp) {
   if (!opp) return;
   const level = opp.level || 0;
   document.getElementById("oppLevelBadge").textContent = (level + 1) + " / " + TOTAL_LEVELS;
+  renderOrbs("oppOrbTrack", level);
   if (opp.frame) {
     document.getElementById("oppCanvas").src = opp.frame;
   }
@@ -708,21 +854,17 @@ function updateOppDisplay(opp) {
     ? '<span class="hint-chip">' + hint + '</span>' : "";
 }
 
-function renderProgress(players, ids) {
-  const track = document.getElementById("progressTrack");
-  track.innerHTML = ids.map(id => {
-    const p     = players[id];
-    const level = p?.level || 0;
-    const pct   = Math.round((level / TOTAL_LEVELS) * 100);
-    const isMe  = id === myId;
-    return `<div class="comp-progress-row">
-      <span class="comp-progress-name">${p?.name || "?"}</span>
-      <div class="comp-progress-bar-wrap">
-        <div class="comp-progress-bar${isMe ? " me" : ""}" style="width:${pct}%"></div>
-      </div>
-      <span class="comp-progress-num">${level}/${TOTAL_LEVELS}</span>
-    </div>`;
-  }).join("");
+// ── Orb rendering ─────────────────────────────────────────────────────────────
+function renderOrbs(trackId, currentLevel) {
+  const track = document.getElementById(trackId);
+  let html = "";
+  for (let i = 0; i < TOTAL_LEVELS; i++) {
+    let cls = "comp-orb";
+    if (i < currentLevel) cls += " done";
+    else if (i === currentLevel) cls += " current";
+    html += `<div class="${cls}"></div>`;
+  }
+  track.innerHTML = html;
 }
 
 // ── Model + Webcam ────────────────────────────────────────────────────────────
@@ -734,6 +876,12 @@ async function startWebcam() {
   webcam = new tmPose.Webcam(480, 360, true);
   await webcam.setup();
   await webcam.play();
+
+  // Replace placeholder canvas with webcam's own canvas to avoid black frames
+  const placeholder = document.getElementById("myCanvas");
+  webcam.canvas.className = placeholder.className;
+  webcam.canvas.id = "myCanvas";
+  placeholder.parentNode.replaceChild(webcam.canvas, placeholder);
 }
 
 async function gameLoop(oppId) {
@@ -745,10 +893,6 @@ async function gameLoop(oppId) {
 
 async function predict() {
   if (!model || !webcam || isTransitioning) return;
-
-  const canvas = document.getElementById("myCanvas");
-  canvas.width = 480; canvas.height = 360;
-  canvas.getContext("2d").drawImage(webcam.canvas, 0, 0);
 
   const { posenetOutput } = await model.estimatePose(webcam.canvas);
   const predictions = await model.predict(posenetOutput);
@@ -766,7 +910,6 @@ async function predict() {
 
   document.getElementById("myHints").innerHTML = '<span class="hint-chip">' + hint + "</span>";
 
-  // Write hint to Firebase for opponent to see
   update(ref(db, "comp_rooms/" + roomCode + "/players/" + myId), { hint });
 
   const target    = queue[myLevel];
@@ -788,7 +931,6 @@ async function advanceLevel() {
   const nextLevel = myLevel + 1;
 
   if (nextLevel >= TOTAL_LEVELS) {
-    // I finished!
     const now = Date.now();
     await update(ref(db, "comp_rooms/" + roomCode + "/players/" + myId), {
       level: nextLevel,
@@ -857,6 +999,9 @@ document.getElementById("exitGameBtn").addEventListener("click", async e => {
   if (myRef) await remove(myRef);
   window.location.href = "index.html";
 });
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+listenOpenRooms();
 
 </script>
 </body>
