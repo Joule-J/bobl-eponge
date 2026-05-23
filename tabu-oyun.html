@@ -489,8 +489,15 @@
 
       const roles    = room.current_roles || {};
       const annTeam  = roles.announcing_team;
+      const gameMode = room.game_mode || "free";
       const scores   = { ...(room.scores || { A: 0, B: 0 }) };
-      if (result === "correct") scores[annTeam] = (scores[annTeam] || 0) + 1;
+      if (result === "correct") {
+        if (gameMode === "free") {
+          scores.A = (scores.A || 0) + 1;
+        } else {
+          scores[annTeam] = (scores[annTeam] || 0) + 1;
+        }
+      }
 
       setTimeout(async () => {
         document.getElementById("guesserSuccessBadge").classList.add("hidden");
@@ -634,10 +641,17 @@
         document.getElementById("finalDots").innerHTML = results.map(r =>
           '<span class="guess-progress-dot is-' + r + '"></span>'
         ).join("");
-        const winner = scores.A > scores.B ? "A" : scores.B > scores.A ? "B" : null;
-        document.getElementById("finalTeams").innerHTML =
-          '<div class="tabu-final-score"><span>' + scores.A + '</span><span class="tabu-final-total"> — ' + scores.B + '</span></div>' +
-          (winner ? '<div style="font-weight:900;font-size:1.2rem;margin-top:8px">' + t("team_label") + winner + t("wins") + '</div>' : '<div>Égalité !</div>');
+        const gameMode = room.game_mode || "free";
+        let finalHtml;
+        if (gameMode === "free") {
+          finalHtml = '<div class="tabu-final-score"><span>' + (scores.A || 0) + '</span><span class="tabu-final-total"> / ' + total + '</span></div>';
+        } else {
+          const winner = scores.A > scores.B ? "A" : scores.B > scores.A ? "B" : null;
+          finalHtml =
+            '<div class="tabu-final-score"><span>' + scores.A + '</span><span class="tabu-final-total"> — ' + scores.B + '</span></div>' +
+            (winner ? '<div style="font-weight:900;font-size:1.2rem;margin-top:8px">' + t("team_label") + winner + t("wins") + '</div>' : '<div style="font-weight:900;font-size:1.1rem;margin-top:8px">Berabere!</div>');
+        }
+        document.getElementById("finalTeams").innerHTML = finalHtml;
         loopOn = false;
         return;
       }
